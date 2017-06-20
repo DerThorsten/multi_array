@@ -1,0 +1,201 @@
+language: generic
+dist: trusty
+sudo: required
+
+
+matrix:
+  include:
+  
+
+    - os: linux
+      compiler: gcc
+      cache:
+        directories:
+        - $HOME/.cache/pip
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - deadsnakes
+            #- boost-latest/ppa
+            #- george-edison55/precise-backports #cmake-3.x
+            #- kubuntu-backports # cmake 2.8.12
+          packages:
+            - g++-4.8
+            - g++-4.8-multilib
+            - gcc-6
+            - g++-6
+            - g++-multilib
+            - cmake
+      script:
+
+
+        # Link gcc-6 and g++-6 to their standard commands
+        - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
+        - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
+        # Export CC and CXX to tell cmake which compiler to use
+        - export CC=/usr/bin/gcc-6
+        - export CXX=/usr/bin/g++-6
+        # Check versions of gcc, g++ and cmake
+        - gcc -v && g++ -v && cmake --version
+    
+        - cmake 
+          -DBUILD_TESTS=ON 
+        - make -j2
+        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+
+
+    - os: linux
+      compiler: gcc-4.8
+      cache:
+        directories:
+        - $HOME/.cache/pip
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - deadsnakes
+          packages:
+            - g++-4.8
+            - g++-4.8-multilib
+            - gcc-6
+            - g++-6
+            - g++-multilib
+            - cmake
+      script:
+        - pyvenv-3.5 venv
+
+        - source venv/bin/activate
+        - pip install numpy
+        - cmake 
+          -DBUILD_TESTS=ON 
+        - make -j2
+
+
+    # osx clang
+    - os: osx
+      compiler: clang
+      script:
+        - cmake 
+            -DBUILD_TESTS=ON 
+        - make -j 2
+        - sudo make install
+        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+
+    # conda linux  gcc4 
+    - os: linux
+      env: 
+        - USE_CONDA=true
+        - COMPILER=gcc
+      before_script:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH";
+        - hash -r;
+        - conda config --set always_yes yes --set changeps1 no;
+        - conda update -q conda;
+        - conda info -a;
+        #
+        - conda create -q -n dev gcc
+        - source activate dev
+        - conda install -c anaconda cmake=3.2
+        - conda install -c conda-forge glpk
+
+      script:
+
+        ###############################################
+        # shortcuts
+        ###############################################
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - source activate dev
+        - export ENV_ROOT="$HOME/miniconda/envs/dev"
+        - export ENV_INCLUDE="$ENV_ROOT/include"
+        - export ENV_BIN=$ENV_ROOT/bin
+        - export ROOT_BIN="$HOME/miniconda/bin"
+        
+
+
+        ###############################################
+        # setup compiler
+        ###############################################
+        - export CXX="$ENV_BIN/g++";
+        - export CC="$ENV_BIN/gcc";
+        
+        #-DCMAKE_C_COMPILER=$C_COMPILER_PATH
+        #-DCMAKE_CXX_COMPILER=$COMPILER_PATH
+        ###############################################
+        # configure cmake
+        ###############################################
+        - $ENV_BIN/cmake 
+                -DBUILD_TESTS=ON 
+
+        ###############################################
+        # the actual build
+        ###############################################
+        - make -j 2
+        ###############################################
+        # cpp tests
+        ############################################### 
+        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+     
+
+    # conda linux  gcc6 
+    - os: linux
+      env: 
+        - USE_CONDA=true
+        - COMPILER=gcc6
+      before_script:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH";
+        - hash -r;
+        - conda config --set always_yes yes --set changeps1 no;
+        - conda update -q conda;
+        - conda info -a;
+        #
+        - conda create -q -n dev 
+        - source activate dev
+        - conda install -c anaconda cmake=3.2
+        - conda install -c rdonnelly gcc-6=6.1.0;
+
+
+      script:
+
+        ###############################################
+        # shortcuts
+        ###############################################
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - source activate dev
+        - export ENV_ROOT="$HOME/miniconda/envs/dev"
+        - export ENV_INCLUDE="$ENV_ROOT/include"
+        - export ENV_BIN=$ENV_ROOT/bin
+        - export ROOT_BIN="$HOME/miniconda/bin"
+        
+
+
+        ###############################################
+        # setup compiler
+        ###############################################
+        - export CXX="$ENV_BIN/g++";
+        - export CC="$ENV_BIN/gcc";
+        
+        #-DCMAKE_C_COMPILER=$C_COMPILER_PATH
+        #-DCMAKE_CXX_COMPILER=$COMPILER_PATH
+        ###############################################
+        # configure cmake
+        ###############################################
+        - $ENV_BIN/cmake 
+                -DBUILD_TESTS=ON
+
+        ###############################################
+        # the actual build
+        ###############################################
+        - make -j 2
+        ###############################################
+        # cpp tests
+        ###############################################
+        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+        ###############################################
+        # install and test the project
+        ###############################################
+    
