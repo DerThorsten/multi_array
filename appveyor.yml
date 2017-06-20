@@ -1,0 +1,35 @@
+environment:
+  matrix:
+    - BUILD_TYPE: "MSVC_64"
+      COMPILER: MSVC15
+      PLATFORM: "x64"
+
+  global:
+    PLATFORMTOOLSET: "v140"
+
+install:
+- if [%BUILD_TYPE%]==[MSVC_64] set PATH=C:\Miniconda36-x64\Scripts;%PATH%
+- if [%BUILD_TYPE%]==[MSVC_64] conda config --add channels conda-forge --force
+- if [%BUILD_TYPE%]==[MSVC_64] conda create -y --name test_env #python=3 numpy boost hdf5 glpk
+# NOTE: need to use "call" because otherwise it won't work within an if block.
+- if [%BUILD_TYPE%]==[MSVC_64] call activate test_env
+
+
+
+build_script:
+- if [%BUILD_TYPE%]==[MSVC_64] git submodule update --init --recursive
+- if [%BUILD_TYPE%]==[MSVC_64] mkdir build
+- if [%BUILD_TYPE%]==[MSVC_64] cd build
+- if [%BUILD_TYPE%]==[MSVC_64] cmake -G "Visual Studio 14 2015 Win64" -DBUILD_TESTS=yes  ..
+- if [%BUILD_TYPE%]==[MSVC_64] cmake --build . --config Release
+
+
+
+test_script:
+- if [%BUILD_TYPE%]==[MSVC_64] ctest --output-on-failure
+
+# Enable this to be able to login to the build worker. You can use the
+# `remmina` program in Ubuntu, use the login information that the line below
+# prints into the log.
+# on_finish:
+# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
