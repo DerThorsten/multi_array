@@ -129,7 +129,7 @@ namespace multi_array{
 
 
         template<size_t DIM>
-        inline uint64_t cOrderStrides(
+        inline void cOrderStrides(
             const Shape<DIM>   & shape,
             Strides<DIM> & strides
         ){
@@ -137,6 +137,7 @@ namespace multi_array{
             for(int d=int(DIM)-2; d>=0; --d){
                 strides[d] = shape[d+1] * strides[d+1];
             }
+
         }
 
         template<size_t DIM>
