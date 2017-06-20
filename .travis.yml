@@ -126,8 +126,7 @@ matrix:
         ###############################################
         # configure cmake
         ###############################################
-        - $ENV_BIN/cmake 
-                -DBUILD_TESTS=ON 
+        - $ENV_BIN/cmake -DBUILD_TESTS=ON 
 
         ###############################################
         # the actual build
@@ -184,8 +183,7 @@ matrix:
         ###############################################
         # configure cmake
         ###############################################
-        - $ENV_BIN/cmake 
-                -DBUILD_TESTS=ON
+        - $ENV_BIN/cmake                 -DBUILD_TESTS=ON
 
         ###############################################
         # the actual build
