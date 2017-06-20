@@ -83,7 +83,7 @@ namespace meta{
 
     template<class COND, class TYPE>
     struct Switch<COND, TYPE>{
-        static_assert(COND::value);
+        static_assert(COND::value,"No case of the Switch evaluated to true");
         typedef TYPE type;
     };    
 
