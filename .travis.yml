@@ -5,9 +5,7 @@ sudo: required
 
 matrix:
   include:
-  
-
-    - os: linux
+      - os: linux
       compiler: gcc
       cache:
         directories:
