@@ -3,7 +3,12 @@
 
 #include <array>
 
+#include "multi_array/meta/variadic.hxx"
+
 namespace multi_array{
+
+
+
 
     template<std::size_t DIM>
     class Shape : public std::array<int64_t, DIM>{
@@ -18,13 +23,64 @@ namespace multi_array{
             return c;
         }
     };
-    
+        
+    ///\cond
+    namespace detail_multi_array{
 
+
+        //void getShapeImpl( Shape<0> & result){
+        //}  
+        template<std::size_t CURRENT_INDEX, std::size_t DIM>
+        void getShapeImpl(
+            Shape<DIM> & result
+        ){
+        } 
+        template<std::size_t CURRENT_INDEX, std::size_t DIM, class ARG>
+        void getShapeImpl(
+            Shape<DIM> & result,
+            ARG && arg
+        ){
+            result[CURRENT_INDEX] = arg;
+        } 
+        template<std::size_t CURRENT_INDEX, std::size_t DIM, class ARG, class ... ARGS>
+        void getShapeImpl(
+            Shape<DIM> & result,
+            ARG && arg,
+            ARGS && ... args
+        ){
+            result[CURRENT_INDEX] = arg;
+            getShapeImpl<CURRENT_INDEX+1, DIM, ARGS ...>(result, std::forward<ARGS>(args) ...);
+        }
+
+        
+        
+    }
+    ///\endcond
+
+    template<class  ... ARGS>
+    Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
+    shape(ARGS && ... args){
+        typedef meta::VariadicArgumentsSize<ARGS ... > VSizeType;
+        typedef Shape< VSizeType::value > ResultType;
+        ResultType result;
+        detail_multi_array::getShapeImpl<0>(result, std::forward<ARGS>(args)...);
+        return result;
+    }
 
 
 
     template<std::size_t DIM>
     class Strides : public std::array<int64_t, DIM>{
+        bool operator== (const Strides & other){
+            for(std::size_t d=0; d<DIM; ++d){
+                if(this->operator[](d) != other[d])
+                    return false;
+            }
+            return true;
+        }
+        bool operator != (const Strides & other){
+            return !((*this) == other);
+        }
     };
 
 

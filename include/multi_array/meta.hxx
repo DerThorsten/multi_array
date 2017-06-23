@@ -1,13 +1,14 @@
 
 #pragma once
 
-#include <iostream>
-#include <memory>
+#include <complex>
 
-#include "multi_array.hxx"
+
 
 namespace multi_array{
 namespace meta{
+
+
 
 
     
@@ -50,6 +51,13 @@ namespace meta{
     };
 
 
+
+    template<class T>
+    struct IsComplex : FalseCase {
+    };
+    template<class T>
+    struct IsComplex<std::complex<T>> : TrueCase {
+    };
 
     template<class T , class ... Args>
     class AllIntegral : public 
@@ -170,19 +178,6 @@ namespace meta{
         > 
     {
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     template< template<typename> typename F, class T, class FIRST , class ... Args>

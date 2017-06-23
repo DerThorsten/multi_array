@@ -40,7 +40,7 @@
        throw std::runtime_error(s.str()); \
     }
 
-/** \def MULTI_ARRAY_CHECK(expression,message)
+/** \def MULTI_ARRAY_CHECK(expresscd bl ion,message)
     \brief macro for runtime checks
     
     \warning The check is done 
