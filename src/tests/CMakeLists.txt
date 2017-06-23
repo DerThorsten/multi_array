@@ -19,5 +19,5 @@ if(BUILD_TESTS)
     )
     add_test(NAME test_multi_array COMMAND test_multi_array)
     target_link_libraries(test_multi_array)
-
+    add_dependencies(test_multi_array doctest)
 endif(BUILD_TESTS)
