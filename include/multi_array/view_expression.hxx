@@ -60,7 +60,6 @@ public:
    
 
     int64_t strides(const std::size_t a)const{
-        std::cout<<"get da strides of view expr.\n";
         return static_cast<const E&>(*this).strides(a); 
     }
     bool matchingStrides()const{
@@ -155,16 +154,7 @@ public:
         e2_(e2), // cast!
         binaryFunctor_(BinaryFunctor())
     {
-        std::cout<<"da constructor\n";
-        std::cout<<"e1 s0 :\n";
-        std::cout<<e1_.strides(0)<<"\n";
-        std::cout<<"e1 s1 :\n";
-        std::cout<<e1_.strides(1)<<"\n";
-        std::cout<<"e2 s0 :\n";
-        std::cout<<e2_.strides(0)<<"\n";
-        std::cout<<"e2 s1 :\n";
-        std::cout<<e2_.strides(1)<<"\n";
-        std::cout<<"da done\n";
+
     }
 
     BinaryViewExpression(const BinaryViewExpression & other)
@@ -193,19 +183,15 @@ public:
 
 
     int64_t strides(const std::size_t a)const{
-        std::cout<<"get da strides of bin. view expr. at "<<a<<" \n";
         return e1_.strides(a);
     }
 
     bool matchingStrides()const{
-        std::cout<<"bve matchingStrides\n";
+
         for(std::size_t a=0; a<DIM; ++a){
-            std::cout<<"a="<<a<<"\n";
-            std::cout<<"lea \n";
             const auto s1 = e1_.strides(a);
-            std::cout<<"leb \n";
             const auto s2 = e2_.strides(a);
-            std::cout<<"dunso \n";
+
             if(s1!=0 && s2!=0 && s1!=s2){
                 return false;
             }
@@ -267,8 +253,15 @@ public:
     }
 
 private:
-    const expression_type_1& e1_;
-    const expression_type_2& e2_;
+
+    const expression_type_1  e1_;
+    const expression_type_2  e2_;
+
+    // having references is very
+    // dangerous since these
+    // expressions are usually temp. objects
+    //const expression_type_1 & e1_;
+    //const expression_type_2 & e2_;
     BinaryFunctor binaryFunctor_;
 };
 

@@ -335,9 +335,7 @@ inline int64_t
 SmartMultiArray<T, DIM, IS_CONST>::strides(
     const std::size_t a
 )const{
-    std::cout<<"strides of marray at "<<a<<"\n";
     const auto s =  strides_[a];
-    std::cout<<"strides["<<a<<" ] = "<<s<<"\n";
     return s;
 }
 
@@ -587,8 +585,6 @@ SmartMultiArray<T, DIM, IS_CONST>::reshape(
         return retVal;
     }
     else{
-
-        //std::cout<<"D\n";
 
         SmartMultiArray<T, SHAPE_DIM, IS_CONST> retVal(actualShape);
         auto retPtr = retVal.data();

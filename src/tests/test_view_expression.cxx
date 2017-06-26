@@ -46,31 +46,32 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::matchingStrides"){
         SUBCASE("matching strides advanced B"){
             auto ab  = a + b;
             auto aba = a + ab;
-
-  
             REQUIRE_EQ(ab.strides(0) , a.strides(0));
             REQUIRE_EQ(ab.strides(1) , a.strides(1));
             REQUIRE_EQ(ab.matchingStrides(),true);
-
             REQUIRE_EQ(aba.strides(0) , a.strides(0));
             REQUIRE_EQ(aba.strides(1) , a.strides(1));
-            REQUIRE_EQ(aba.matchingStrides(),true);
-            
+            REQUIRE_EQ(aba.matchingStrides(),true);    
         }
         SUBCASE("matching strides advanced"){
             //auto ab  = (a + b);
             auto aba  = ((a + b)) + e;
 
-            REQUIRE_EQ(a.smartHandle().useCount(),1);
-
-            std::cout<<"A\n\n\n\n";
-
+            //REQUIRE_EQ(a.smartHandle().useCount(),1);
             REQUIRE_EQ(aba.strides(0) , 3);
-            std::cout<<"B\n";
             REQUIRE_EQ(aba.strides(1) , 1);
-            std::cout<<"C\n";
             REQUIRE_EQ(aba.matchingStrides(),true);
-            std::cout<<"D\n";
+
+        }
+        SUBCASE("matching strides advanced 2"){
+            //auto ab  = (a + b);
+            auto thesum  = e + ((a + b + (a+b+(a+b)))) + e;
+            //REQUIRE_EQ(a.smartHandle().useCount(),1);
+
+            REQUIRE_EQ(thesum.strides(0) , 3);
+            REQUIRE_EQ(thesum.strides(1) , 1);
+            REQUIRE_EQ(thesum.matchingStrides(),true);
+
         }
 
         SUBCASE("not matching strides simple"){
