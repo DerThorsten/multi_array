@@ -63,10 +63,6 @@ matrix:
             - g++-multilib
             - cmake
       script:
-        - pyvenv-3.5 venv
-
-        - source venv/bin/activate
-        - pip install numpy
         - cmake 
           -DBUILD_TESTS=ON 
         - make -j2
