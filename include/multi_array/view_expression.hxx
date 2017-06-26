@@ -62,6 +62,10 @@ public:
     int64_t strides(const std::size_t a)const{
         return static_cast<const E&>(*this).strides(a); 
     }
+
+    bool matchingStrides(const Strides<DIM> & s)const{
+        return static_cast<const E&>(*this).matchingStrides(s); 
+    }
     bool matchingStrides()const{
         return static_cast<const E&>(*this).matchingStrides(); 
     }
@@ -191,7 +195,7 @@ public:
 
         for(std::size_t a=0; a<DIM; ++a){
             const auto s1 = e1_.strides(a);
-            const auto s2 = s.strides(a);
+            const auto s2 = s[a];
 
             if(s1!=0 && s2!=0 && s1!=s2){
                 return false;

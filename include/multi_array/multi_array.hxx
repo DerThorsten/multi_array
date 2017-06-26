@@ -17,6 +17,8 @@
 #include "operate.hxx"
 #include "navigator.hxx"
 #include "for_each_impl.hxx"
+#include "runtime_check.hxx"
+
 
 namespace multi_array{
 
@@ -207,6 +209,7 @@ private:
 
 
     const_reference unsafeAccess(const uint64_t index)const;
+    reference unsafeAccess(const uint64_t index);
     uint64_t lastValidMemOffset()const;
     
     template<class E, class U>
@@ -304,19 +307,23 @@ SmartMultiArray<T, DIM, IS_CONST>::operator= (
 ) -> SmartMultiArray & {
 
     // TODO check if empty
-
-
-    const E & expression = e;
-    const auto isOverlapping =  e.overlaps(*this);
-    if(isOverlapping){
-        // alloc a new array (TODO think about axis order)
-        SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
-        tmp.assignFromNonOverlappingExpression(e);
-        // assign tmp to this
-        // TODO
+    if(this->empty()){
+       MULTI_ARRAY_CHECK(false,"NOT YET IMPLEMENTED");
     }
     else{
-        return this->assignFromNonOverlappingExpression(e);
+
+        const E & expression = e;
+        const auto isOverlapping =  e.overlaps(*this);
+        if(isOverlapping){
+            // alloc a new array (TODO think about axis order)
+            SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
+            tmp.assignFromNonOverlappingExpression(e);
+            // assign tmp to this
+            // TODO
+        }
+        else{
+            this->assignFromNonOverlappingExpression(e);
+        }
     }
 
     return *this;
@@ -340,19 +347,25 @@ SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression (
 
             // optimal operation in case
             // of dense array
-            if(this->dense){
+            if(this->contiguous()){
                 //the array is dense this means withe can use the 
                 // ``unsafeAccess`` access  of the expression
                 // which is just linear memory access
+                for(uint64_t i=0; i<this->size(); ++i){
+                    this->unsafeAccess(i) = e.unsafeAccess(i); 
+                }
             }
             else{
                 // we need to create te
+                MULTI_ARRAY_CHECK(false,"NOT YET IMPLEMENTED");
             }
         }
         else{
-
+            MULTI_ARRAY_CHECK(false,"NOT YET IMPLEMENTED");
         }
-
+    }
+    else{
+        MULTI_ARRAY_CHECK(false,"NOT YET IMPLEMENTED");
     }
 }
 
@@ -713,6 +726,14 @@ SmartMultiArray<T, DIM, IS_CONST>::bind(
 }
 
 
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline auto
+SmartMultiArray<T, DIM, IS_CONST>::unsafeAccess(
+    const uint64_t index
+)-> reference{
+    return data_[index];
+}
 template<class T, std::size_t DIM, bool IS_CONST>
 inline auto
 SmartMultiArray<T, DIM, IS_CONST>::unsafeAccess(
