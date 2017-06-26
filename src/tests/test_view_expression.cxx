@@ -53,7 +53,7 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::matchingStrides"){
             REQUIRE_EQ(aba.strides(1) , a.strides(1));
             REQUIRE_EQ(aba.matchingStrides(),true);    
         }
-        SUBCASE("matching strides advanced"){
+        SUBCASE("matching strides advanced C"){
             //auto ab  = (a + b);
             auto aba  = ((a + b)) + e;
 
@@ -63,11 +63,9 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::matchingStrides"){
             REQUIRE_EQ(aba.matchingStrides(),true);
 
         }
-        SUBCASE("matching strides advanced 2"){
+        SUBCASE("matching strides advanced D"){
             //auto ab  = (a + b);
             auto thesum  = e + ((a + b + (a+b+(a+b)))) + e;
-            //REQUIRE_EQ(a.smartHandle().useCount(),1);
-
             REQUIRE_EQ(thesum.strides(0) , 3);
             REQUIRE_EQ(thesum.strides(1) , 1);
             REQUIRE_EQ(thesum.matchingStrides(),true);
@@ -94,11 +92,9 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
 
         auto a =  ma::ones<int>(2,3);
         auto b =  ma::ones<int>(2,3);
-        auto c =  ma::ones<int>(3,2);
-        auto d =  c.transposedView();
-
+        auto c =  ma::ones<int>(2,3);
         
-        SUBCASE("matching strides simple"){
+        SUBCASE("Simple"){
             auto ab = a + b ;   
             REQUIRE_EQ(ab.matchingStrides(),true);
             REQUIRE_EQ(ab.contiguous(),true);
@@ -113,7 +109,21 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
             REQUIRE_EQ(ab.unsafeAccess(5),2);
 
         }
+        SUBCASE("Advanced"){
+            auto theSum = a + b + c + (a+b);   
+            REQUIRE_EQ(theSum.matchingStrides(),true);
+            REQUIRE_EQ(theSum.contiguous(),true);
+            REQUIRE_EQ(theSum.strides(0) , a.strides(0));
+            REQUIRE_EQ(theSum.strides(1) , a.strides(1));
 
+            REQUIRE_EQ(theSum.unsafeAccess(0),5);
+            REQUIRE_EQ(theSum.unsafeAccess(1),5);
+            REQUIRE_EQ(theSum.unsafeAccess(2),5);
+            REQUIRE_EQ(theSum.unsafeAccess(3),5);
+            REQUIRE_EQ(theSum.unsafeAccess(4),5);
+            REQUIRE_EQ(theSum.unsafeAccess(5),5);
+
+        }
         
     }
 
