@@ -57,13 +57,25 @@ public:
     int64_t shape(const size_t j) const{ 
         return static_cast<const E&>(*this).shape(j); 
     }
-    int64_t strides(const std::size_t j) const{ 
-        std::cout<<"get view strides "<<j<<"\n";
-        return static_cast<const E&>(*this).strides(j); 
+   
+
+    int64_t strides(const std::size_t a)const{
+        std::cout<<"get da strides of view expr.\n";
+        return static_cast<const E&>(*this).strides(a); 
     }
-    //const T * data()const{
-    //    return static_cast<const E&>(*this).data(); 
-    //}
+    bool matchingStrides()const{
+        return static_cast<const E&>(*this).matchingStrides(); 
+    }
+    bool contiguous() const{
+        return static_cast<const E&>(*this).contiguous(); 
+    }
+    bool contiguous(const Order & o) const{
+        return static_cast<const E&>(*this).contiguous(o); 
+    }
+
+
+
+
 
     template<class VIEW>
     bool overlaps(const VIEW & v) const{ 
@@ -81,6 +93,12 @@ public:
     operator E const&() const{
         return static_cast<const E&>(*this); 
     }
+
+
+    T unsafeAccess(const uint64_t index)const{
+        return static_cast<const E&>(*this).unsafeAccess(index); 
+    }
+
 
     // \cond suppress doxygen
     class ExpressionPseudoIterator {
@@ -132,18 +150,32 @@ public:
         const ViewExpression<DIM, E1, T1>& e1,
         const ViewExpression<DIM, E2, T2>& e2
     )
-    :   e1_(e1), // cast!
+    :   base(),
+        e1_(e1), // cast!
         e2_(e2), // cast!
         binaryFunctor_(BinaryFunctor())
     {
-        //if(!MARRAY_NO_DEBUG) {
-        //    marray_detail::Assert(e1_.size() != 0 && e2_.size() != 0);
-        //    marray_detail::Assert(e1_.dimension() == e2_.dimension());
-        //    for(size_t j=0; j<e1_.dimension(); ++j) {
-        //        marray_detail::Assert(e1_.shape(j) == e2_.shape(j));
-        //    }
-        //}
+        std::cout<<"da constructor\n";
+        std::cout<<"e1 s0 :\n";
+        std::cout<<e1_.strides(0)<<"\n";
+        std::cout<<"e1 s1 :\n";
+        std::cout<<e1_.strides(1)<<"\n";
+        std::cout<<"e2 s0 :\n";
+        std::cout<<e2_.strides(0)<<"\n";
+        std::cout<<"e2 s1 :\n";
+        std::cout<<e2_.strides(1)<<"\n";
+        std::cout<<"da done\n";
     }
+
+    BinaryViewExpression(const BinaryViewExpression & other)
+    :   base(),   
+        e1_(other.e1_),
+        e2_(other.e2_),
+        binaryFunctor_(BinaryFunctor()){
+    }
+
+
+
 
     const size_t size() const{ 
         return e1_.size() ;
@@ -159,14 +191,21 @@ public:
 
 
 
+
     int64_t strides(const std::size_t a)const{
+        std::cout<<"get da strides of bin. view expr. at "<<a<<" \n";
         return e1_.strides(a);
     }
 
     bool matchingStrides()const{
-        for(auto a=0; a<DIM; ++a){
+        std::cout<<"bve matchingStrides\n";
+        for(std::size_t a=0; a<DIM; ++a){
+            std::cout<<"a="<<a<<"\n";
+            std::cout<<"lea \n";
             const auto s1 = e1_.strides(a);
+            std::cout<<"leb \n";
             const auto s2 = e2_.strides(a);
+            std::cout<<"dunso \n";
             if(s1!=0 && s2!=0 && s1!=s2){
                 return false;
             }
@@ -174,6 +213,15 @@ public:
         return true;
     }
 
+    // only valid if matchin strides
+    bool contiguous() const{
+        return e1_.contiguous();
+    }
+
+    // only valid if matchin strides
+    bool contiguous(const Order & o) const{
+        return e1_.contiguous(o);
+    }
 
    
     //const bool isSimple() const
@@ -208,6 +256,15 @@ public:
         typename E1::ExpressionPseudoIterator iterator1_;
         typename E2::ExpressionPseudoIterator iterator2_;
     };
+
+
+    value_type unsafeAccess(const uint64_t index)const{
+
+        return binaryFunctor_(
+            e1_.unsafeAccess(index),
+            e2_.unsafeAccess(index)
+        ); 
+    }
 
 private:
     const expression_type_1& e1_;

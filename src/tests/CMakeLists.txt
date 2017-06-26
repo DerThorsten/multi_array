@@ -10,7 +10,8 @@ if(BUILD_TESTS)
     #add_library(doctest_interface INTERFACE)
     #target_include_directories(doctest_interface INTERFACE ${test_multi_array}/include)
 
-
+    add_executable(standalone standalone.cxx)
+     
     add_executable(test_multi_array 
         test.cxx
         test_smart_multi_array.cxx

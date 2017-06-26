@@ -22,11 +22,22 @@ namespace multi_array{
 
 
 
-// template<class T, std::size_t DIM, class CHILD>
-// class MultiArrayBase
-// : public ViewExpression<DIM, MultiArrayBase<T, DIM, CHILD>, T>
-// {
-// };
+template<std::size_t DIM, class E, class T>
+class ViewExpression;
+
+template<std::size_t DIM, class E, class T, class UnaryFunctor>
+class UnaryViewExpression;
+
+template<std::size_t DIM, class E1, class T1, class E2, class T2, class BinaryFunctor>
+class BinaryViewExpression;
+
+template<std::size_t DIM, class E, class T, class S, class BinaryFunctor>
+class BinaryViewExpressionScalarFirst;
+
+template<std::size_t DIM, class E, class T, class S, class BinaryFunctor>
+class BinaryViewExpressionScalarSecond;
+
+
 
 
 template<class T, std::size_t DIM, bool IS_CONST = false>
@@ -35,6 +46,27 @@ class SmartMultiArray
     //public MultiArrayBase<T, DIM, SmartMultiArray<T, DIM,IS_CONST >>
     public ViewExpression<DIM, SmartMultiArray<T, DIM, IS_CONST>, T>
 {
+
+    typedef ViewExpression<DIM, SmartMultiArray<T, DIM, IS_CONST>, T> BaseType;
+
+    template<std::size_t _DIM, class _E, class _T>
+    friend class ViewExpression;
+
+    template<std::size_t _DIM, class _E, class _T, class _UnaryFunctor>
+    friend class UnaryViewExpression;
+
+    template<std::size_t _DIM, class _E1, class _T1, class _E2, class _T2, class _BinaryFunctor>
+    friend class BinaryViewExpression;
+
+    template<std::size_t _DIM, class _E, class _T, class _S, class _BinaryFunctor>
+    friend class BinaryViewExpressionScalarFirst;
+
+    template<std::size_t _DIM, class _E, class _T, class _S, class _BinaryFunctor>
+    friend class BinaryViewExpressionScalarSecond;
+
+
+
+
 
     template<class MARRAY, bool CONST_INSTANCE, class ... Args>
     friend class detail_multi_array::BracketOpDispatcher;
@@ -171,11 +203,13 @@ public:
 
 
 
+    bool matchingStrides()const;
 
 private:
+
+    const_reference unsafeAccess(const uint64_t index)const;
     uint64_t lastValidMemOffset()const;
-
-
+    
 
 
     
@@ -193,7 +227,8 @@ private:
 template<class T, std::size_t DIM, bool IS_CONST>
 SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray()
 
-:   shape_(),
+:   BaseType(),
+    shape_(),
     strides_(),
     size_(0),
     data_(nullptr),
@@ -206,7 +241,8 @@ inline
 SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     const ShapeType & shape
 )
-:   shape_(shape),
+:   BaseType(),
+    shape_(shape),
     strides_(detail_multi_array::cOrderStrides(shape)),
     size_(detail_multi_array::shapeSize(shape)),
     data_(new T[size_]),
@@ -221,7 +257,8 @@ SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     const ShapeType & shape,
     const T &  initValue
 )
-:   shape_(shape),
+:   BaseType(),
+    shape_(shape),
     strides_(detail_multi_array::cOrderStrides(shape)),
     size_(detail_multi_array::shapeSize(shape)),
     data_(new T[size_]),
@@ -235,7 +272,8 @@ inline
 SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     const  SmartMultiArray & other
 )
-:   shape_(other.shape_),
+:   BaseType(),
+    shape_(other.shape_),
     strides_(other.strides_),
     size_(other.size_),
     data_(other.data_),
@@ -297,7 +335,10 @@ inline int64_t
 SmartMultiArray<T, DIM, IS_CONST>::strides(
     const std::size_t a
 )const{
-    return strides_[a];
+    std::cout<<"strides of marray at "<<a<<"\n";
+    const auto s =  strides_[a];
+    std::cout<<"strides["<<a<<" ] = "<<s<<"\n";
+    return s;
 }
 
 
@@ -623,6 +664,23 @@ SmartMultiArray<T, DIM, IS_CONST>::bind(
     }
     return res;
 }
+
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline auto
+SmartMultiArray<T, DIM, IS_CONST>::unsafeAccess(
+    const uint64_t index
+)const -> const_reference{
+    return data_[index];
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline bool 
+SmartMultiArray<T, DIM, IS_CONST>::matchingStrides()const{
+    return true;
+}
+
+
 
 template<class T, std::size_t DIM, bool IS_CONST>
 inline uint64_t 
