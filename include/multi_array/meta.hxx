@@ -180,7 +180,7 @@ namespace meta{
     };
 
 
-    template< template<typename> typename F, class T, class FIRST , class ... Args>
+    template< template<typename> class F, class T, class FIRST , class ... Args>
     class AccumulateSum : public 
 
          std::integral_constant<
@@ -195,7 +195,7 @@ namespace meta{
     {
     };
 
-    template<template<typename> typename F, class T, class FIRST>
+    template<template<typename> class F, class T, class FIRST>
     class AccumulateSum<F, T, FIRST> : public 
 
          std::integral_constant<
