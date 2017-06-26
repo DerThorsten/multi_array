@@ -65,12 +65,8 @@ class SmartMultiArray
     friend class BinaryViewExpressionScalarSecond;
 
 
-
-
-
     template<class MARRAY, bool CONST_INSTANCE, class ... Args>
     friend class detail_multi_array::BracketOpDispatcher;
-
 
     template<class MARRAY_IN, class MARRAY_OUT, std::size_t IN_AXIS_INDEX, std::size_t OUT_AXIS_INDEX,  class ARG, bool IS_INTEGRAL>
     friend struct detail_multi_array::ProcessArg;
@@ -135,6 +131,8 @@ public:
     // assignment operators
     //////////////////////////////////////////////////
     SmartMultiArray & operator= ( const SmartMultiArray & );
+
+    // assign from fancy expression =)
     template<class E, class U>
     SmartMultiArray & operator= ( const ViewExpression<DIM, E, U> & );
 
@@ -157,7 +155,7 @@ public:
 
     bool overlaps(void * ptr)const;
     template<class _T, std::size_t _DIM, bool _IS_CONST>
-    bool overlaps(SmartMultiArray<_T, _DIM, _IS_CONST> & other)const;
+    bool overlaps(const SmartMultiArray<_T, _DIM, _IS_CONST> & other)const;
 
 
 
@@ -207,10 +205,12 @@ public:
 
 private:
 
+
     const_reference unsafeAccess(const uint64_t index)const;
     uint64_t lastValidMemOffset()const;
     
-
+    template<class E, class U>
+    void assignFromNonOverlappingExpression(const ViewExpression<DIM, E, U> &);
 
     
     ShapeType shape_;
@@ -302,9 +302,56 @@ inline auto
 SmartMultiArray<T, DIM, IS_CONST>::operator= ( 
     const ViewExpression<DIM, E, U> & e
 ) -> SmartMultiArray & {
+
     const E & expression = e;
+    const auto isOverlapping =  e.overlaps(*this);
+    if(isOverlapping){
+        // alloc a new array (TODO think about axis order)
+        SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
+        tmp->assignFromNonOverlappingExpression(e);
+        // assign tmp to this
+        // TODO
+    }
+    else{
+        return this->assignFromNonOverlappingExpression(e);
+    }
+
     return *this;
 }
+
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression ( 
+    const ViewExpression<DIM, E, U> & e
+){
+    // check the expression
+    // is homogeneous wrt the strides
+    if(e.matchingStrides()){
+        // now we can check 
+        // if the array is also
+        // matching the expressions strides
+        if(e.matchingStrides(this->strides())){
+
+            // optimal operation in case
+            // of dense array
+            if(this->dense){
+                //the array is dense this means withe can use the 
+                // ``unsafeAccess`` access  of the expression
+                // which is just linear memory access
+            }
+            else{
+                
+            }
+        }
+        else{
+
+        }
+
+    }
+}
+
 
 
 
@@ -438,7 +485,7 @@ template<class T, std::size_t DIM, bool IS_CONST>
 template<class _T, std::size_t _DIM, bool _IS_CONST>
 inline bool 
 SmartMultiArray<T, DIM, IS_CONST>::overlaps(
-    SmartMultiArray<_T, _DIM, _IS_CONST> & other
+    const SmartMultiArray<_T, _DIM, _IS_CONST> & other
 )const{
 
     void * aBegin  = this->data_;

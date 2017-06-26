@@ -186,6 +186,20 @@ public:
         return e1_.strides(a);
     }
 
+
+    bool matchingStrides(const Strides<DIM> & s)const{
+
+        for(std::size_t a=0; a<DIM; ++a){
+            const auto s1 = e1_.strides(a);
+            const auto s2 = s.strides(a);
+
+            if(s1!=0 && s2!=0 && s1!=s2){
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool matchingStrides()const{
 
         for(std::size_t a=0; a<DIM; ++a){
