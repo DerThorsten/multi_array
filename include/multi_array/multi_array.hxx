@@ -303,12 +303,15 @@ SmartMultiArray<T, DIM, IS_CONST>::operator= (
     const ViewExpression<DIM, E, U> & e
 ) -> SmartMultiArray & {
 
+    // TODO check if empty
+
+
     const E & expression = e;
     const auto isOverlapping =  e.overlaps(*this);
     if(isOverlapping){
         // alloc a new array (TODO think about axis order)
         SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
-        tmp->assignFromNonOverlappingExpression(e);
+        tmp.assignFromNonOverlappingExpression(e);
         // assign tmp to this
         // TODO
     }
@@ -326,6 +329,7 @@ inline void
 SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression ( 
     const ViewExpression<DIM, E, U> & e
 ){
+
     // check the expression
     // is homogeneous wrt the strides
     if(e.matchingStrides()){
@@ -342,7 +346,7 @@ SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression (
                 // which is just linear memory access
             }
             else{
-                
+                // we need to create te
             }
         }
         else{
