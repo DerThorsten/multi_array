@@ -187,7 +187,7 @@ matrix:
         ###############################################
         # cpp tests
         ###############################################
-        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+        #- CTEST_OUTPUT_ON_FAILURE=TRUE make test
         ###############################################
         # install and test the project
         ###############################################
