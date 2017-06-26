@@ -5,6 +5,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <algorithm>
 
 
 #include "meta.hxx"
@@ -15,23 +16,24 @@
 #include "view_expression.hxx"
 #include "operate.hxx"
 #include "navigator.hxx"
+#include "for_each_impl.hxx"
 
 namespace multi_array{
 
 
 
-template<class T, std::size_t DIM, class CHILD>
-class MultiArrayBase
-: public ViewExpression<DIM, MultiArrayBase<T, DIM, CHILD>, T>
-{
-};
+// template<class T, std::size_t DIM, class CHILD>
+// class MultiArrayBase
+// : public ViewExpression<DIM, MultiArrayBase<T, DIM, CHILD>, T>
+// {
+// };
 
 
 template<class T, std::size_t DIM, bool IS_CONST = false>
 class SmartMultiArray
 : 
-    public MultiArrayBase<T, DIM, SmartMultiArray<T, DIM,IS_CONST >>
-    //public ViewExpression<DIM, SmartMultiArray<T, DIM, IS_CONST>, T>
+    //public MultiArrayBase<T, DIM, SmartMultiArray<T, DIM,IS_CONST >>
+    public ViewExpression<DIM, SmartMultiArray<T, DIM, IS_CONST>, T>
 {
 
     template<class MARRAY, bool CONST_INSTANCE, class ... Args>
@@ -95,23 +97,18 @@ public:
     SmartMultiArray();
     SmartMultiArray(const ShapeType & shape);
     SmartMultiArray(const ShapeType & shape, const T &);
-    SmartMultiArray(const  SmartMultiArray & other);
+    SmartMultiArray(const SmartMultiArray & other);
 
-
-
-
-
+    //////////////////////////////////////////////////
+    // assignment operators
+    //////////////////////////////////////////////////
     SmartMultiArray & operator= ( const SmartMultiArray & );
     template<class E, class U>
     SmartMultiArray & operator= ( const ViewExpression<DIM, E, U> & );
 
-
-
-
-
-
-    
-
+    //////////////////////////////////////////////////
+    // simple queries
+    //////////////////////////////////////////////////
     constexpr std::size_t dimension() const ;
     const StridesType & strides()const;
     const ShapeType & shape()const;
@@ -120,35 +117,30 @@ public:
     uint64_t size()const;
     bool empty()const;
     const SharedHandleType & smartHandle()const;
-    bool isDense() const;
-    T * data();
-    ConstDataPtrType data()const;
-        
+
+    bool contiguous() const;
+    bool contiguous(const Order & ) const;
+    bool cOrderContiguous() const;
+    bool fOrderContiguous() const;
 
     bool overlaps(void * ptr)const;
     template<class _T, std::size_t _DIM, bool _IS_CONST>
     bool overlaps(SmartMultiArray<_T, _DIM, _IS_CONST> & other)const;
 
 
-    template<class F>
-    void forEach(F && f)const;
 
-    template<class F>
-    void forEach(F && f);
-
-    #if 0
-    template<std::size_t SHAPE_DIM>
-    SmartMultiArray<T, SHAPE_DIM, IS_CONST> reshapeView(const Shape<SHAPE_DIM> & shape)const;
-    template<std::size_t SHAPE_DIM>
-    void reshape(const Shape<SHAPE_DIM> & shape);
-    void resize(const Shape<DIM> & shape)const;
-    #endif
+    //////////////////////////////////////////////////
+    // data access and modification
+    ////////////////////////////////////////////////// 
 
     reference front();
     reference back();
     const_reference front()const;
     const_reference back()const;
 
+    T * data();
+    ConstDataPtrType data()const;
+        
     template<class ... Args>
     typename detail_multi_array::BracketOpDispatcher<SelfType, false, Args ... >::type::type
     operator()(Args && ... args);
@@ -157,8 +149,28 @@ public:
     typename detail_multi_array::BracketOpDispatcher<SelfType, true, Args ... >::type::type
     operator()(Args && ... args)const;
 
+
+    template<class F>
+    void forEach(F && f, const Order & order = Order::C_ORDER)const;
+    template<class F>
+    void forEach(F && f, const Order & order = Order::C_ORDER);
+
+
     inline SmartMultiArray<T, DIM-1> 
     bind(const uint64_t axis, const uint64_t value);
+
+    
+    template<std::size_t SHAPE_DIM>
+    SmartMultiArray<T, SHAPE_DIM, IS_CONST> 
+    reshape(const Shape<SHAPE_DIM> & shape, const Order & order = Order::C_ORDER)const;
+    
+
+
+    void transpose();
+    SmartMultiArray transposedView()const;
+
+
+
 
 private:
     uint64_t lastValidMemOffset()const;
@@ -312,9 +324,50 @@ SmartMultiArray<T, DIM, IS_CONST>::smartHandle()const -> const SharedHandleType 
 
 template<class T, std::size_t DIM, bool IS_CONST>
 inline bool
-SmartMultiArray<T, DIM, IS_CONST>::isDense()const {
+SmartMultiArray<T, DIM, IS_CONST>::contiguous()const {
     return this->lastValidMemOffset() + 1 == this->size();
 }
+
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline bool
+SmartMultiArray<T, DIM, IS_CONST>::contiguous(
+    const Order & order
+)const {
+    if(order == Order::C_ORDER)
+        return this->cOrderContiguous();
+    else if(order == Order::F_ORDER)
+        return this->fOrderContiguous();
+    else{
+        throw std::runtime_error("wrong order");
+    }
+}
+
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline bool
+SmartMultiArray<T, DIM, IS_CONST>::cOrderContiguous()const {
+
+    if(this->contiguous()){
+        const auto cStrides = detail_multi_array::cOrderStrides(shape_);
+        return strides_.relaxedEqual(cStrides);
+    }
+    return false;
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline bool
+SmartMultiArray<T, DIM, IS_CONST>::fOrderContiguous()const {
+
+    if(this->contiguous()){
+        const auto cStrides = detail_multi_array::fOrderStrides(shape_);
+        return strides_.relaxedEqual(cStrides);
+    }
+    return false;
+}
+
+
+
 
 
 template<class T, std::size_t DIM, bool IS_CONST>
@@ -359,38 +412,38 @@ SmartMultiArray<T, DIM, IS_CONST>::overlaps(
 }
 
 
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class F>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::forEach(
+    F && f,
+    const Order & order
+)const{
+    if(this->contiguous()){
+        for(auto i=0; i<size_; ++i)
+            f(data_[i]);
+    }
+    else{
+        detail_for_each::ForEachImpl<DIM, uint8_t(Order::C_ORDER) >::op(*this, std::forward<F>(f));
+    }
+}
 
 
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class F>
 inline void 
-SmartMultiArray<T, DIM, IS_CONST>::forEach(F && f)const{
-    if(this->isDense()){
+SmartMultiArray<T, DIM, IS_CONST>::forEach(
+    F && f,
+    const Order & order
+){
+    if(this->contiguous()){
         for(auto i=0; i<size_; ++i)
             f(data_[i]);
     }
     else{
-
+        detail_for_each::ForEachImpl<DIM, uint8_t(Order::C_ORDER) >::op(*this, std::forward<F>(f));
     }
 }
-
-template<class T, std::size_t DIM, bool IS_CONST>
-template<class F>
-inline void 
-SmartMultiArray<T, DIM, IS_CONST>::forEach(F && f){
-    if(this->isDense()){
-        for(auto i=0; i<size_; ++i)
-            f(data_[i]);
-    }
-    else{
-
-    }
-}
-
-
-
-
-
 
 
 template<class T, std::size_t DIM, bool IS_CONST>
@@ -398,8 +451,6 @@ inline bool
 SmartMultiArray<T, DIM, IS_CONST>::empty()const{
     return data_ == nullptr;
 }
-
-
 
 template<class T, std::size_t DIM, bool IS_CONST>
 inline auto
@@ -435,7 +486,7 @@ SmartMultiArray<T, DIM, IS_CONST>::resize(
 {
     const auto shapeSize = detail_multi_array::shapeSize(shape);
     if(shapeSize == size){
-        if(this->isDense()){
+        if(this->contiguous()){
             this->reshapeView()
         }
     }
@@ -443,18 +494,73 @@ SmartMultiArray<T, DIM, IS_CONST>::resize(
 
     }
 }
+#endif
+
+template<class T, std::size_t DIM, bool IS_CONST>
+void 
+SmartMultiArray<T, DIM, IS_CONST>::transpose(
+){
+    std::reverse(shape_.begin(), shape_.end());
+    std::reverse(strides_.begin(), strides_.end());
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+inline auto   
+SmartMultiArray<T, DIM, IS_CONST>::transposedView(
+
+)const -> SmartMultiArray<T, DIM, IS_CONST>{
+    SmartMultiArray<T, DIM, IS_CONST> ret(*this);
+    ret.transpose();
+    return ret;
+}
+
 
 template<class T, std::size_t DIM, bool IS_CONST>
 template<std::size_t SHAPE_DIM>
 inline auto 
-SmartMultiArray<T, DIM, IS_CONST>::reshapeView(
-    const Shape<SHAPE_DIM> & shape
+SmartMultiArray<T, DIM, IS_CONST>::reshape(
+    const Shape<SHAPE_DIM> & shape,
+    const Order & order
 ) const -> SmartMultiArray<T, SHAPE_DIM, IS_CONST> {
 
-    const auto nNeg = shape.countNegativeEntries();
+   
+    if(order != Order::C_ORDER && order != Order::F_ORDER){
+        throw std::runtime_error("can only reshape in C or F Order currently");
+    }
 
+    // try to replace -1 with fitting values
+    const auto actualShape = shape.makeShape(this->size());
+
+
+    // is contiguous with respect 
+    // to the desired order
+    if( this->contiguous(order) ){
+
+        SmartMultiArray<T, SHAPE_DIM, IS_CONST> retVal;
+        retVal.shape_ = actualShape;
+        retVal.strides_ = detail_multi_array::strides(actualShape, order);
+        retVal.size_ = this->size_;
+        retVal.data_ = this->data_;
+        retVal.smart_handle_ = this->smart_handle_;
+
+        return retVal;
+    }
+    else{
+
+        //std::cout<<"D\n";
+
+        SmartMultiArray<T, SHAPE_DIM, IS_CONST> retVal(actualShape);
+        auto retPtr = retVal.data();
+        uint64_t c = 0;
+        this->forEach([&](const_reference value){
+            retPtr[c] = value;
+            ++c;
+        }, order);
+
+        return retVal;
+    }
 }
-#endif
+
 
 
 

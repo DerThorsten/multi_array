@@ -48,6 +48,37 @@ TEST_CASE( "[Shape]  -- [detail_multi_array::dot()]" ) {
         REQUIRE_EQ(s[2],1);
     }
 }
+TEST_CASE( "[Shape]  -- [Shape::countNegativeEntries()]" ) {
+
+    SUBCASE("1D Shape"){
+        auto s = multi_array::shape(-1);
+        REQUIRE_EQ(s.size(),1);
+        const auto nNeg = s.countNegativeEntries();
+        REQUIRE_EQ(nNeg,1);
+    }
+}
+TEST_CASE( "[Shape]  -- [Shape::makeShape()]" ) {
+
+    SUBCASE("1D Shape"){
+        auto sa = multi_array::shape(-1);
+        auto s = sa.makeShape(6);
+        REQUIRE_EQ(s.size(),1);
+        REQUIRE_EQ(s[0], 6);
+    }
+}
+TEST_CASE( "[Strides]  " ) {
+
+    SUBCASE("copy strides"){
+
+        auto shape = multi_array::shape(3);
+        auto strides = multi_array::detail_multi_array::cOrderStrides(shape);
+
+        REQUIRE_EQ(strides[0],1);
+
+        multi_array::Strides<1> s = strides;
+        REQUIRE_EQ(s[0],1);
+    }
+}
 
 TEST_CASE( "2D dot  -- [detail_multi_array::dot()]" ) {
     multi_array::Shape<2> shape;

@@ -7,7 +7,7 @@
 namespace multi_array{
 
     template<class T, class ... ARGS>
-    SmartMultiArray<
+    inline SmartMultiArray<
         T,
         meta::VariadicArgumentsSize<
             ARGS ... 
@@ -20,8 +20,17 @@ namespace multi_array{
         return ResultType(shape(std::forward<ARGS>(args)...), static_cast<T>(1));
     }
 
+
+    template<class T, std::size_t DIM>
+    inline SmartMultiArray<T, DIM, false> 
+    ones(Shape<DIM> && shape){
+        typedef SmartMultiArray<T, DIM, false > ResultType; 
+        return ResultType(shape);
+    }
+
+
     template<class T, class ... ARGS>
-    SmartMultiArray<
+    inline SmartMultiArray<
         T,
         meta::VariadicArgumentsSize<
             ARGS ... 

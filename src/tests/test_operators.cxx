@@ -47,12 +47,12 @@ TEST_CASE("[SmartMultiArray] operator+= "){
             REQUIRE_EQ(a(1,1),0);
         }
         SUBCASE("strided view"){
-            auto aa = a(multi_array::all(), 0);
-            aa += 3;
-            REQUIRE_EQ(a(0,0),3);
-            REQUIRE_EQ(a(0,1),3);
-            REQUIRE_EQ(a(1,0),0);
-            REQUIRE_EQ(a(1,1),0);
+           auto aa = a(multi_array::all(), 0);
+           aa += 3;
+           REQUIRE_EQ(a(0,0),3);
+           REQUIRE_EQ(a(0,1),0);
+           REQUIRE_EQ(a(1,0),3);
+           REQUIRE_EQ(a(1,1),0);
         }
     }
     SUBCASE("complex"){

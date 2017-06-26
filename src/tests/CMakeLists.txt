@@ -15,7 +15,9 @@ if(BUILD_TESTS)
         test.cxx
         test_smart_multi_array.cxx
         test_operators.cxx
+        test_view_expression.cxx
         test_misc.cxx
+        test_navigator.cxx
     )
     add_test(NAME test_multi_array COMMAND test_multi_array)
     target_link_libraries(test_multi_array)

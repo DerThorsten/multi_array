@@ -77,6 +77,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::SmartMultiArray"){
     }
 }
 
+
 TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
 
     SUBCASE( "1D access Simple -- [SmartMultiArray::operator()]" ) {
@@ -210,7 +211,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides(1), 1);   
             REQUIRE_EQ(subarray.strides(2), 0);
             REQUIRE_EQ(subarray.data(),array.data());
-            REQUIRE_EQ(subarray.isDense(), true);
+            REQUIRE_EQ(subarray.contiguous(), true);
 
             REQUIRE_EQ(&subarray.front() ,&subarray(0,0,0));
             REQUIRE_EQ(subarray.front() ,0);
@@ -248,7 +249,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides(1), 1);   
             REQUIRE_EQ(subarray.strides(2), 0);
             REQUIRE_EQ(subarray.data(),array.data());
-            REQUIRE_EQ(subarray.isDense(), true);
+            REQUIRE_EQ(subarray.contiguous(), true);
 
             REQUIRE_EQ(&subarray.front() ,&subarray(0,0,0));
             REQUIRE_EQ(subarray.front() ,0);
@@ -288,7 +289,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.front() ,0);
             REQUIRE_EQ(&subarray.back() ,&subarray(2,3));
             REQUIRE_EQ(subarray.back() ,11);
-            REQUIRE_EQ(subarray.isDense(), true);
+            REQUIRE_EQ(subarray.contiguous(), true);
 
             // read 
             auto c = 0;
@@ -319,7 +320,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.front() ,0);
             REQUIRE_EQ(&subarray.back() ,&subarray(2,3));
             REQUIRE_EQ(subarray.back() ,11);
-            REQUIRE_EQ(subarray.isDense(), true);
+            REQUIRE_EQ(subarray.contiguous(), true);
 
             // read 
             auto c = 0;
@@ -344,7 +345,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.front() ,6);
             REQUIRE_EQ(&subarray.back() ,&subarray(1,1));
             REQUIRE_EQ(subarray.back() ,11);
-            REQUIRE_FALSE(subarray.isDense());
+            REQUIRE_FALSE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -358,7 +359,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.front() ,5);
             REQUIRE_EQ(&subarray.back() ,&subarray(1));
             REQUIRE_EQ(subarray.back() ,9);
-            REQUIRE_FALSE(subarray.isDense());
+            REQUIRE_FALSE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -367,7 +368,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides()[0] , 1);
             REQUIRE_EQ(subarray(0) , 9);
             REQUIRE_EQ(subarray(1) , 10);
-            REQUIRE(subarray.isDense());
+            REQUIRE(subarray.contiguous());
 
             REQUIRE_EQ(&subarray.front() ,&subarray(0));
             REQUIRE_EQ(subarray.front() ,9);
@@ -382,7 +383,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides()[0] , 1);
             REQUIRE_EQ(subarray(0) , 9);
             REQUIRE_EQ(subarray(1) , 10);
-            REQUIRE(subarray.isDense());
+            REQUIRE(subarray.contiguous());
 
             REQUIRE_EQ(&subarray.front() ,&subarray(0));
             REQUIRE_EQ(subarray.front() ,9);
@@ -402,7 +403,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             // while strides may suggest non-density
             // since there is only 1 element it
             // is always dense
-            REQUIRE(subarray.isDense());
+            REQUIRE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -412,7 +413,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides(0), 3);
             REQUIRE_EQ(subarray(0), 8);
             REQUIRE_EQ(subarray(1), 11);
-            REQUIRE_FALSE(subarray.isDense());
+            REQUIRE_FALSE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -428,7 +429,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             // while strides may suggest non-density
             // since there is only 1 element it
             // is always dense
-            REQUIRE(subarray.isDense());
+            REQUIRE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -438,7 +439,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.strides(0), 8);
             REQUIRE_EQ(subarray(0), 1);
             REQUIRE_EQ(subarray(1), 9);
-            REQUIRE_FALSE(subarray.isDense());
+            REQUIRE_FALSE(subarray.contiguous());
         }
         {
             using namespace multi_array;
@@ -446,10 +447,11 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             REQUIRE_EQ(subarray.dimension(), 1);
             REQUIRE_EQ(subarray.shape(0), 2);
             REQUIRE_EQ(subarray.strides(0), 2);
-            REQUIRE_FALSE(subarray.isDense());
+            REQUIRE_FALSE(subarray.contiguous());
         }
     }
 }
+
 
 TEST_CASE("[SmartMultiArray] SmartMultiArray::overlaps"){
     SUBCASE("Trivial Non Overlapping"){
@@ -500,5 +502,175 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::overlaps"){
 }
 
 
+TEST_CASE("[SmartMultiArray] SmartMultiArray::forEach"){
+    namespace ma = multi_array;
+
+    SUBCASE("2D"){
+        // unstrided
+        auto a = ma::ones<int>(2,3);
+        // strided
+        auto bb = ma::ones<int>(2,5,3);
+        auto b =  bb(ma::all(), 3, ma::all());
+
+        auto c = 0;
+        for(auto x0=0; x0<2; ++x0)
+        for(auto x1=0; x1<3; ++x1){
+            a(x0, x1) = c;
+            b(x0, x1) = c;
+            ++c;
+        }
+        SUBCASE("unstrided"){
+
+            // check order  (c order is current default)
+            c = 0;
+            a.forEach([&](int & val){
+                REQUIRE_EQ(val, c);
+                ++c;
+            });
+
+            //  write val
+            a.forEach([&](int & val){
+                val *= 2;
+            });
+
+            // read val
+            c = 0;
+            a.forEach([&](int & val){
+                REQUIRE_EQ(val/2, c);
+                ++c;
+            });
+        }
+        SUBCASE("strided"){
+
+            // check order  (c order is current default)
+            c = 0;
+            b.forEach([&](int & val){
+                REQUIRE_EQ(val, c);
+                ++c;
+            });
+
+            //  write val
+            b.forEach([&](int & val){
+                val *= 2;
+            });
+
+            // read val
+            c = 0;
+            b.forEach([&](int & val){
+                REQUIRE_EQ(val/2, c);
+                ++c;
+            });
+        }
+    }
+
+
+    SUBCASE("11D"){
+        // unstrided
+        auto a = ma::ones<int>(2,2,2,2,2,2,2,2,2,2,2);
+        // strided
+        auto bb = ma::ones<int>(2,3,2,2,2,2,2,2,2,2,2,2);
+
+        auto b =  bb(ma::all(),1,ma::all(),ma::all(),ma::all(),ma::all(),ma::all(),ma::all(),ma::all(),ma::all(),ma::all(),ma::all());
+
+        auto c = 0;
+        for(auto x0  =0;  x0 <2; ++x0 )
+        for(auto x1  =0;  x1 <2; ++x1 )
+        for(auto x2  =0;  x2 <2; ++x2 )
+        for(auto x3  =0;  x3 <2; ++x3 )
+        for(auto x4  =0;  x4 <2; ++x4 )
+        for(auto x5  =0;  x5 <2; ++x5 )
+        for(auto x6  =0;  x6 <2; ++x6 )
+        for(auto x7  =0;  x7 <2; ++x7 )
+        for(auto x8  =0;  x8 <2; ++x8 )
+        for(auto x9  =0;  x9 <2; ++x9 )
+        for(auto x10  =0; x10<2; ++x10)
+        {
+            a(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10) = c;
+            b(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10) = c;
+            ++c;
+        }
+        SUBCASE("unstrided"){
+
+            // check order  (c order is current default)
+            c = 0;
+            a.forEach([&](int & val){
+                REQUIRE_EQ(val, c);
+                ++c;
+            });
+
+            //  write val
+            a.forEach([&](int & val){
+                val *= 2;
+            });
+
+            // read val
+            c = 0;
+            a.forEach([&](int & val){
+                REQUIRE_EQ(val/2, c);
+                ++c;
+            });
+        }
+        SUBCASE("strided"){
+
+            // check order  (c order is current default)
+            c = 0;
+            b.forEach([&](int & val){
+                REQUIRE_EQ(val, c);
+                ++c;
+            });
+
+            //  write val
+            b.forEach([&](int & val){
+                val *= 2;
+            });
+
+            // read val
+            c = 0;
+            b.forEach([&](int & val){
+                REQUIRE_EQ(val/2, c);
+                ++c;
+            });
+        }
+    }
+    
+}
+
+
+TEST_CASE("[SmartMultiArray] SmartMultiArray::reshape"){
+
+    namespace ma = multi_array;
+
+    SUBCASE("2D"){
+        auto a = ma::ones<int>(2,3);
+
+        auto c = 0;
+        for(auto x0=0; x0<2; ++x0)
+        for(auto x1=0; x1<3; ++x1){
+            a(x0, x1) = c;
+            ++c;
+        }
+        REQUIRE(a.contiguous(ma::Order::C_ORDER));
+        REQUIRE_EQ(a.smartHandle().useCount(),1);
+
+        SUBCASE("Explicit Shape"){
+            // do the reshape
+            auto b = a.reshape(ma::shape(6));
+            REQUIRE_EQ(b.size(), 6);
+            REQUIRE_EQ(b.shape(0), 6);
+            // ensure that no copy has been made
+            REQUIRE_EQ(a.smartHandle().useCount(),2);
+            REQUIRE_EQ(a.data(),b.data());
+        }
+        SUBCASE("Incomplete Shape"){
+            // do the reshape
+            auto b = a.reshape(ma::shape(-1));
+            REQUIRE_EQ(b.size(), 6);
+            REQUIRE_EQ(b.shape(0), 6);
+            // ensure that no copy has been made
+            REQUIRE_EQ(a.smartHandle().useCount(), 2);
+            REQUIRE_EQ(a.data(),b.data());
+        }
+    }
+}
 
 TEST_SUITE_END();

@@ -57,7 +57,8 @@ public:
     int64_t shape(const size_t j) const{ 
         return static_cast<const E&>(*this).shape(j); 
     }
-    int64_t strides(const size_t j) const{ 
+    int64_t strides(const std::size_t j) const{ 
+        std::cout<<"get view strides "<<j<<"\n";
         return static_cast<const E&>(*this).strides(j); 
     }
     //const T * data()const{
@@ -155,6 +156,25 @@ public:
     bool overlaps(const VIEW & v) const {
         return e1_.overlaps(v) || e2_.overlaps(v); 
     }
+
+
+
+    int64_t strides(const std::size_t a)const{
+        return e1_.strides(a);
+    }
+
+    bool matchingStrides()const{
+        for(auto a=0; a<DIM; ++a){
+            const auto s1 = e1_.strides(a);
+            const auto s2 = e2_.strides(a);
+            if(s1!=0 && s2!=0 && s1!=s2){
+                return false;
+            }
+        }
+        return true;
+    }
+
+
    
     //const bool isSimple() const
     //    { return e1_.isSimple() && e2_.isSimple()
