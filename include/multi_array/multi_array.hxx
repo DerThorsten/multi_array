@@ -17,6 +17,7 @@
 #include "operate.hxx"
 #include "navigator.hxx"
 #include "for_each_impl.hxx"
+#include "for_each_offset.hxx"
 #include "runtime_check.hxx"
 
 
@@ -356,8 +357,21 @@ SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression (
                 }
             }
             else{
-                // we need to create te
-                MULTI_ARRAY_CHECK(false,"NOT YET IMPLEMENTED");
+                // we can loop over all memory
+                // offsets.
+                // since the expression and
+                // array have the same strides the offset
+                // is the same for e and the array
+                    
+                // currently we assume c order
+                forEachOffset(shape_, strides_,
+
+                    [&](const uint64_t offset){
+                        this->unsafeAccess(offset) = e.unsafeAccess(offset); 
+                    }
+
+                );
+
             }
         }
         else{
