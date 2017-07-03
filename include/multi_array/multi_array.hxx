@@ -1,6 +1,6 @@
 #pragma once
 
-#define BANANA_JOE
+
 
 #include <iostream>
 #include <memory>
@@ -183,11 +183,11 @@ public:
     template<class _T, bool _IS_CONST>
     SmartMultiArray(const SmartMultiArray<_T,DIM, _IS_CONST> & );
 
-    #ifdef BANANA_JOE
+
     // from a view expression
     template<class E, class TE>
     SmartMultiArray(const ViewExpression<DIM, E, TE> & );
-    #endif
+
 
     //////////////////////////////////////////////////
     // assignment operators
@@ -431,21 +431,7 @@ SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     *this = other;
 }
 
-// #ifdef BANANA_JOE
-// template<class T, std::size_t DIM, bool IS_CONST>
-// template<class E, class TE>
-// inline
-// SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
-//     const ViewExpression<DIM, E, TE> & rhs
-// )
-// : SmartMultiArray(static_cast<const E &>(rhs)){
-// }
 
-// #endif
-
-
-
-#ifdef BANANA_JOE
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class E, class TE>
 inline
@@ -456,8 +442,6 @@ SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     //std::cout<<"Copy Constructor from View Exp\n";
     this->expressionCopyConstructorHelper(static_cast<const E &>(rhs));
 }
-
-#endif
 
 
 template<class T, std::size_t DIM, bool IS_CONST>
