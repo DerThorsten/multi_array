@@ -81,11 +81,8 @@ namespace multi_array{
         static void op(T1& x, const T2& y) { x |= y; } 
         void operator()(T1& x, const T2& y) { x |= y; } 
     };
-    template<class T1, class T2>
-    struct XorEqual { 
-        static void op(T1& x, const T2& y) { x ^= y; } 
-        void operator()(T1& x, const T2& y) { x ^= y; } 
-    };
+
+
     template<class T1, class T2>
     struct AndEqual { 
         static void op(T1& x, const T2& y) { x &= y; } 
@@ -120,6 +117,40 @@ namespace multi_array{
         static type op(const T1& x, const T2& y){ return x / y; } 
         type operator()(const T1& x, const T2& y) const { return x / y; } 
     };
+
+    template<class T1, class T2>
+    struct Or { 
+        typedef typename meta::PromoteType<T1, T2>::type type;
+        static type op(const T1& x, const T2& y){ return x || y; } 
+        type operator()(const T1& x, const T2& y) const { return x || y; } 
+    };
+
+    template<class T1, class T2>
+    struct And { 
+        typedef typename meta::PromoteType<T1, T2>::type type;
+        static type op(const T1& x, const T2& y){ return x && y; } 
+        type operator()(const T1& x, const T2& y) const { return x && y; } 
+    };
+
+
+
+
+    template< template<class, class> class FUNCTOR>
+    struct FunctorGenerator{
+        template<class T1, class T2>
+        struct Generate{
+            typedef FUNCTOR<T1, T2> type;
+        };
+    };
+
+
+
+
+
+
+
+
+
 
     }
 }

@@ -37,18 +37,41 @@ namespace meta{
     struct SizeT : std::integral_constant<std::size_t, VAL>{
     };
 
-
-
-    struct TrueCase : std::integral_constant<bool, true>{
-    };
-
-    struct FalseCase : std::integral_constant<bool, true>{
-    };
-
     template<class U>
     struct Identity{
         typedef U type;
     };
+
+    typedef std::true_type TrueCase;
+    typedef std::false_type FalseCase;
+
+    typedef Identity<TrueCase> TrueFunc;
+    typedef Identity<FalseCase> FalseFunc;
+
+
+
+    template<class CONDITION, class F1, class F2>
+    struct EvalIf;
+
+    template<class F1, class F2>
+    struct EvalIf<FalseCase, F1, F2>
+    : public F2{
+    };
+
+    template<class F1, class F2>
+    struct EvalIf<TrueCase, F1, F2>
+    : public F1{
+    };
+
+ 
+    template<class F_CONDITION, class F1, class F2>
+    struct LazyEvalIf
+    : public EvalIf<typename  F_CONDITION::type, F1, F2>{ 
+    };
+
+   
+
+   
 
 
 
@@ -73,10 +96,56 @@ namespace meta{
     {
     };
 
+  
+
+    template<class COND, class TYPE, class ... ARGS>
+    struct  LazyEvalIfSwitch : public EvalIf<
+        typename COND::type, 
+        TYPE,
+        LazyEvalIfSwitch<ARGS ... >
+    >
+    {
+
+
+
+    };
+
+    template<class COND, class TYPE>
+    struct LazyEvalIfSwitch<COND, TYPE> : public TYPE
+    {
+        static_assert(COND::type::value,"No case of the LazyEvalIfSwitch evaluated to true");
+        //typedef TYPE type;
+    };
+
+
+
+
+
+    template<class COND, class TYPE, class ... Args>
+    struct EvalIfSwitch :   public 
+        EvalIf<
+            COND,
+            TYPE,
+            typename EvalIfSwitch<Args ...>::type
+        >
+    {
+
+    };
+    
+
+    template<class COND, class TYPE>
+    struct EvalIfSwitch<COND, TYPE>{
+        static_assert(COND::value,"No case of the EvalIfSwitch evaluated to true");
+        typedef TYPE type;
+    };    
+
+
+
+
+
     template<class T>
     struct AllIntegral<T> : public std::integral_constant<bool, std::is_integral<T>::value > {
     };
-
 
 
     template<class COND, class TYPE, class ... Args>
@@ -180,7 +249,7 @@ namespace meta{
     };
 
 
-    template< template<typename> typename F, class T, class FIRST , class ... Args>
+    template< template<typename> class F, class T, class FIRST , class ... Args>
     class AccumulateSum : public 
 
          std::integral_constant<
@@ -195,7 +264,7 @@ namespace meta{
     {
     };
 
-    template<template<typename> typename F, class T, class FIRST>
+    template<template<typename> class F, class T, class FIRST>
     class AccumulateSum<F, T, FIRST> : public 
 
          std::integral_constant<
@@ -209,6 +278,19 @@ namespace meta{
         > 
     {
     };
+
+
+
+    template<class T>
+    struct RemoveReferenceAndCv 
+    :   std::remove_cv<
+            typename std::remove_reference<
+                T
+            >::type
+        >
+    {
+    };
+
 
 
     template<class T>

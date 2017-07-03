@@ -4,14 +4,44 @@
 #include <array>
 
 #include "multi_array/meta/variadic.hxx"
-
+#include "multi_array/order.hxx"
 namespace multi_array{
 
+
+
+    template<class T>
+    struct DataType{
+        typedef T type;
+    };
+
+    template<class T>
+    DataType<T> dtype(const T & val){
+        return DataType<T>();
+    }
+
+    //template<class T>
+    //DataType<T> dtype(){
+    //    return DataType<T>();
+    //}
 
 
 
     template<std::size_t DIM>
     class Shape : public std::array<int64_t, DIM>{
+    public:
+        Shape(): std::array<int64_t, DIM>(){
+
+        }
+        bool operator== (const Shape & other)const{
+            for(std::size_t d=0; d<DIM; ++d){
+                if(this->operator[](d) != other[d])
+                    return false;
+            }
+            return true;
+        }
+        bool operator != (const Shape & other)const{
+            return !((*this) == other);
+        }
         std::size_t countNegativeEntries()const{
             std::size_t c = 0 ;
             for(std::size_t d=0; d<DIM; ++d){
@@ -19,10 +49,49 @@ namespace multi_array{
                     ++c;
                 }
             }
-            ++c;
             return c;
         }
+
+
+        Shape<DIM> makeShape(
+            const uint64_t size
+        )const{
+            Shape<DIM> res = *this;
+            const auto nNeg = this->countNegativeEntries();
+            if(nNeg > 1){
+                throw std::runtime_error("Shape can only contain one negative element");
+            }
+            if(nNeg == 1){
+                uint64_t accSize = 1;
+                uint64_t whereNegative;
+                for(std::size_t d=0; d<DIM; ++d){
+                    if(res[d] >=0 ){
+                        accSize *= res[d];
+                    }
+                    else{
+                        whereNegative = d;
+                    }
+                }
+
+                // calculate with
+                // what we replace the -1
+                auto estimatedShape =  size / accSize;
+
+                // check if estimatedShape * accSize == size
+                if(estimatedShape * accSize != size){
+                    throw std::runtime_error("Cannot reshape: TODO ");
+                }
+                res[whereNegative] = estimatedShape;
+            }
+            return res;
+        }
+
     };
+
+
+
+
+
         
     ///\cond
     namespace detail_multi_array{
@@ -67,19 +136,44 @@ namespace multi_array{
         return result;
     }
 
+    template<class  ... ARGS>
+    Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
+    makeShape(ARGS && ... args){
+        typedef meta::VariadicArgumentsSize<ARGS ... > VSizeType;
+        typedef Shape< VSizeType::value > ResultType;
+        ResultType result;
+        detail_multi_array::getShapeImpl<0>(result, std::forward<ARGS>(args)...);
+        return result;
+    }
+
+
 
 
     template<std::size_t DIM>
     class Strides : public std::array<int64_t, DIM>{
-        bool operator== (const Strides & other){
+    public:
+        Strides(): std::array<int64_t, DIM>(){
+
+        }
+        bool operator== (const Strides & other)const{
             for(std::size_t d=0; d<DIM; ++d){
                 if(this->operator[](d) != other[d])
                     return false;
             }
             return true;
         }
-        bool operator != (const Strides & other){
+        bool operator != (const Strides & other)const{
             return !((*this) == other);
+        }
+        bool relaxedEqual(const Strides & other)const{
+            for(std::size_t d=0; d<DIM; ++d){
+                const auto val = this->operator[](d);
+                const auto otherVal = other[d];
+                if( (val != 0 && otherVal != 0) && val!=otherVal){
+                    return false;
+                }
+            }
+            return true;
         }
     };
 
@@ -205,8 +299,88 @@ namespace multi_array{
             cOrderStrides(shape, strides);
             return strides;
         }
+
+
+        template<size_t DIM>
+        inline void fOrderStrides(
+            const Shape<DIM>   & shape,
+            Strides<DIM> & strides
+        ){
+            strides.front() = 1;
+            for(int d=1; d<DIM; ++d){
+                strides[d] = shape[d-1] * strides[d-1];
+            }
+
+        }
+
+        template<size_t DIM>
+        Strides<DIM> fOrderStrides(
+            const Shape<DIM>   & shape
+            
+        ){
+            Strides<DIM>  strides;
+            fOrderStrides(shape, strides);
+            return strides;
+        }
+
+        template<size_t DIM>
+        Strides<DIM> strides(
+            const Shape<DIM>   & shape,
+            const Order & order
+        ){
+            if(order == Order::C_ORDER){
+                return cOrderStrides(shape);
+            }
+            else if(order == Order::F_ORDER){
+                return fOrderStrides(shape);
+            }
+            else{
+                throw std::runtime_error("wrong order");
+            }
+        }
+
     }
     ///\encdond
+}
 
 
+namespace std{
+
+    template<std::size_t DIM>
+    ostream& operator<<(
+        ostream& stream, 
+        const multi_array::Strides<DIM> &strides
+    ) {
+        stream<<"[";
+        for(auto i=0; i<DIM; ++i){
+            stream<<strides[i];
+            if(i!=DIM-1){
+                stream<<",";
+            }
+            else{
+                stream<<"]";
+            }
+            
+        }
+        return stream;
+    }
+
+    template<std::size_t DIM>
+    ostream& operator<<(
+        ostream& stream, 
+        const multi_array::Shape<DIM> &shape
+    ) {
+        stream<<"[";
+        for(auto i=0; i<DIM; ++i){
+            stream<<shape[i];
+            if(i!=DIM-1){
+                stream<<",";
+            }
+            else{
+                stream<<"]";
+            }
+            
+        }
+        return stream;
+    }
 }

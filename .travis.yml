@@ -63,10 +63,6 @@ matrix:
             - g++-multilib
             - cmake
       script:
-        - pyvenv-3.5 venv
-
-        - source venv/bin/activate
-        - pip install numpy
         - cmake 
           -DBUILD_TESTS=ON 
         - make -j2
@@ -79,7 +75,6 @@ matrix:
         - cmake 
             -DBUILD_TESTS=ON 
         - make -j 2
-        - sudo make install
         - CTEST_OUTPUT_ON_FAILURE=TRUE make test
 
     # conda linux  gcc4 
@@ -192,7 +187,7 @@ matrix:
         ###############################################
         # cpp tests
         ###############################################
-        - CTEST_OUTPUT_ON_FAILURE=TRUE make test
+        #- CTEST_OUTPUT_ON_FAILURE=TRUE make test
         ###############################################
         # install and test the project
         ###############################################
