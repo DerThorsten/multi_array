@@ -9,24 +9,29 @@
 #include "multi_array/runtime_check.hxx"
 
 
+
+#include <iostream>       // std::cout
+#include <typeinfo>       // operator typeid
+
+
+
 int main(){
     namespace ma = multi_array;
 
-    auto a =  ma::ones<int>(2,3);
-    auto b =  ma::ones<int>(2,3);
-
-    //auto ab  = (a + b);
-    auto aba  = (a + b) + a;
 
 
-    
+    {
+        auto a =  ma::ones<int>(2,3);
+        auto b =  ma::ones<int>(2,3);
+        auto c =  ma::ones<int>(2,3);
+        auto d =  c.transposedView();
+        std::cout<<"strides a "<<a.strides()<<"\n";
+        std::cout<<"strides c "<<c.strides()<<"\n";
+        std::cout<<"strides d "<<d.strides()<<"\n";
+        auto ad = a + d ;   
+        //std::cout<<typeid(ab).name()<<"\n";
+        std::cout<<"ad.matchingStrides() ?\n"<<ad.matchingStrides()<<"\n";
+      
+    }
 
-    std::cout<<"A\n\n\n\n";
-    auto s0 = aba.strides(0);
-    std::cout<<"B\n\n\n\n";
-    auto s1 = aba.strides(1);
-    std::cout<<"C\n\n\n\n";
-    const auto m = aba.matchingStrides();
-    std::cout<<"D\n";
-    
 }

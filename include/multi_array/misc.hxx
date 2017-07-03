@@ -9,6 +9,22 @@ namespace multi_array{
 
 
 
+    template<class T>
+    struct DataType{
+        typedef T type;
+    };
+
+    template<class T>
+    DataType<T> dtype(const T & val){
+        return DataType<T>();
+    }
+
+    //template<class T>
+    //DataType<T> dtype(){
+    //    return DataType<T>();
+    //}
+
+
 
     template<std::size_t DIM>
     class Shape : public std::array<int64_t, DIM>{
@@ -16,7 +32,16 @@ namespace multi_array{
         Shape(): std::array<int64_t, DIM>(){
 
         }
-
+        bool operator== (const Shape & other)const{
+            for(std::size_t d=0; d<DIM; ++d){
+                if(this->operator[](d) != other[d])
+                    return false;
+            }
+            return true;
+        }
+        bool operator != (const Shape & other)const{
+            return !((*this) == other);
+        }
         std::size_t countNegativeEntries()const{
             std::size_t c = 0 ;
             for(std::size_t d=0; d<DIM; ++d){
@@ -62,6 +87,11 @@ namespace multi_array{
         }
 
     };
+
+
+
+
+
         
     ///\cond
     namespace detail_multi_array{
@@ -105,6 +135,17 @@ namespace multi_array{
         detail_multi_array::getShapeImpl<0>(result, std::forward<ARGS>(args)...);
         return result;
     }
+
+    template<class  ... ARGS>
+    Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
+    makeShape(ARGS && ... args){
+        typedef meta::VariadicArgumentsSize<ARGS ... > VSizeType;
+        typedef Shape< VSizeType::value > ResultType;
+        ResultType result;
+        detail_multi_array::getShapeImpl<0>(result, std::forward<ARGS>(args)...);
+        return result;
+    }
+
 
 
 
@@ -300,6 +341,46 @@ namespace multi_array{
 
     }
     ///\encdond
+}
 
 
+namespace std{
+
+    template<std::size_t DIM>
+    ostream& operator<<(
+        ostream& stream, 
+        const multi_array::Strides<DIM> &strides
+    ) {
+        stream<<"[";
+        for(auto i=0; i<DIM; ++i){
+            stream<<strides[i];
+            if(i!=DIM-1){
+                stream<<",";
+            }
+            else{
+                stream<<"]";
+            }
+            
+        }
+        return stream;
+    }
+
+    template<std::size_t DIM>
+    ostream& operator<<(
+        ostream& stream, 
+        const multi_array::Shape<DIM> &shape
+    ) {
+        stream<<"[";
+        for(auto i=0; i<DIM; ++i){
+            stream<<shape[i];
+            if(i!=DIM-1){
+                stream<<",";
+            }
+            else{
+                stream<<"]";
+            }
+            
+        }
+        return stream;
+    }
 }

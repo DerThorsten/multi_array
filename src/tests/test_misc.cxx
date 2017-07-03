@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <type_traits>
-
+#include "multi_array/multi_array_factories.hxx"
 #include "multi_array/multi_array.hxx"
 #include "multi_array/meta.hxx"
 #include "multi_array/runtime_check.hxx"
@@ -11,6 +11,67 @@
 
 
 TEST_SUITE_BEGIN("Misc");
+
+TEST_CASE( "[Factories]  -- arange]" ) {
+    namespace ma = multi_array;
+    SUBCASE("integer a"){
+        auto a = ma::arange(3);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),3);
+        REQUIRE_EQ(a(0),0);
+        REQUIRE_EQ(a(1),1);
+        REQUIRE_EQ(a(2),2);
+    }
+    SUBCASE("integer b"){
+        auto a = ma::arange(3,7);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),4);
+        REQUIRE_EQ(a(0),3);
+        REQUIRE_EQ(a(1),4);
+        REQUIRE_EQ(a(2),5);
+        REQUIRE_EQ(a(3),6);
+    }
+    SUBCASE("integer c"){
+        auto a = ma::arange(3,7,2);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),2);
+        REQUIRE_EQ(a(0),3);
+        REQUIRE_EQ(a(1),5);
+    }
+    SUBCASE("float a"){
+        auto a = ma::arange(3.0f);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),3);
+        REQUIRE_EQ(a(0),doctest::Approx(0.0f));
+        REQUIRE_EQ(a(1),doctest::Approx(1.0f));
+        REQUIRE_EQ(a(2),doctest::Approx(2.0f));
+    }
+    SUBCASE("float b"){
+        auto a = ma::arange(3.0, 7.0);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),4);
+        REQUIRE_EQ(a(0),doctest::Approx(3.0));
+        REQUIRE_EQ(a(1),doctest::Approx(4.0));
+        REQUIRE_EQ(a(2),doctest::Approx(5.0));
+        REQUIRE_EQ(a(3),doctest::Approx(6.0));
+    }
+    SUBCASE("float c"){
+        auto a = ma::arange(3.0, 7.0, 2.0);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),2);
+        REQUIRE_EQ(a(0),doctest::Approx(3.0));
+        REQUIRE_EQ(a(1),doctest::Approx(5.0));
+    }
+    SUBCASE("float d"){
+        auto a = ma::arange(0.0, 1.0, 0.3);
+        REQUIRE_EQ(a.dimension(),1);
+        REQUIRE_EQ(a.size(),4);
+        REQUIRE_EQ(a(0),doctest::Approx(0.0));
+        REQUIRE_EQ(a(1),doctest::Approx(0.3));
+        REQUIRE_EQ(a(2),doctest::Approx(0.6));
+        REQUIRE_EQ(a(3),doctest::Approx(0.9));
+    }
+}
 
 TEST_CASE( "[Shape]  -- [detail_multi_array::dot()]" ) {
 

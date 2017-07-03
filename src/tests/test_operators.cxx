@@ -56,8 +56,8 @@ TEST_CASE("[SmartMultiArray] operator+= "){
         }
     }
     SUBCASE("complex"){
-        auto a = multi_array::zeros<std::complex<int> >(3,2,2);
-        a += std::complex<int>(0,1);
+        auto aaa = multi_array::zeros<std::complex<int> >(3,2,2);
+        aaa += std::complex<int>(0,1);
     }
 
 }

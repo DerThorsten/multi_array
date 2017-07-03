@@ -180,10 +180,67 @@ TEST_CASE("[BinaryViewExpression] assign to array"){
             REQUIRE_EQ(ab.matchingStrides(),true);
             REQUIRE_EQ(ab.contiguous(),true);
             REQUIRE_FALSE(ab.overlaps(c));
+            REQUIRE(a.overlaps(a));
+            REQUIRE(b.overlaps(b));
             REQUIRE(ab.overlaps(a));
             REQUIRE(ab.overlaps(b));
             c = a + b;
         }
+        SUBCASE("matching strides but not dense"){
+            auto a = ma::zeros<int>(12);
+            auto b = ma::ones<int>(12);
+            auto c = ma::arange(12);
+            auto d = ma::arange(12,24);
+
+            auto aa = a(ma::range(0,12,2));
+            auto bb = b(ma::range(0,12,2));
+            auto cc = c(ma::range(0,12,2));
+            auto dd = d(ma::range(0,12,2));
+
+            auto e = bb + cc + dd;
+
+            REQUIRE_EQ(e.matchingStrides(),true);
+            REQUIRE_EQ(e.contiguous(),false);
+
+
+
+
+            SUBCASE("assign to non empty"){
+                aa = e;
+
+                REQUIRE_EQ(aa(0),  bb(0) + cc(0) + dd(0));
+                REQUIRE_EQ(aa(0),  1 +     0+    + 12);
+
+                REQUIRE_EQ(aa(1),  bb(1) + cc(1) + dd(1));
+                REQUIRE_EQ(aa(1),  1 +     2+    + 14);
+
+            }
+            SUBCASE("assign to  empty"){
+                ma::SmartMultiArray<int,1,false> emptyArray;
+                emptyArray = e;
+
+                REQUIRE_EQ(emptyArray(0),  bb(0) + cc(0) + dd(0));
+                REQUIRE_EQ(emptyArray(0),  1 +     0+    + 12);
+
+                REQUIRE_EQ(emptyArray(1),  bb(1) + cc(1) + dd(1));
+                REQUIRE_EQ(emptyArray(1),  1 +     2+    + 14);
+                
+            }
+        }
+    }
+}
+
+
+TEST_CASE("[ViewExpression] compound view expression"){
+
+    namespace ma = multi_array;
+    
+    SUBCASE("2D"){
+        auto a = ma::zeros<int>(12);
+        auto b = ma::ones<int>(12);
+        auto c = ma::arange(12);
+        auto d = ma::arange(12,24);
+        a = (b + 2);
     }
 }
 
