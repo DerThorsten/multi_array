@@ -280,7 +280,7 @@ namespace detail_for_each_offset{
     template<>
     struct ForEachOffsetImpl<5, uint8_t(Order::C_ORDER) >{
         template<class F>
-        static void op(const Shape<6> & shape, const Strides<5> & strides, F && f){
+        static void op(const Shape<5> & shape, const Strides<5> & strides, F && f){
             
             Navigator<5> navigator(shape, strides);
             const auto & s = shape;
