@@ -413,13 +413,13 @@ public:
         }
 
         void incrementCoordinate(const size_t axis){   
-            iterator1_. template incrementCoordinate(axis);
-            iterator2_. template incrementCoordinate(axis); 
+            iterator1_. incrementCoordinate(axis);
+            iterator2_. incrementCoordinate(axis); 
         }
 
         void resetCoordinate(const size_t axis){   
-            iterator1_. template resetCoordinate(axis);
-            iterator2_. template resetCoordinate(axis); 
+            iterator1_. resetCoordinate(axis);
+            iterator2_. resetCoordinate(axis); 
         }
         const value_type operator*() const{ 
             return binaryFunctor_(*iterator1_, *iterator2_); 
@@ -546,11 +546,11 @@ public:
         }
 
         void incrementCoordinate(const size_t axis){   
-            iterator1_. template incrementCoordinate(axis);
+            iterator1_.incrementCoordinate(axis);
         }
 
         void resetCoordinate(const size_t axis){   
-            iterator1_. template resetCoordinate(axis);
+            iterator1_.resetCoordinate(axis);
         }
         const value_type operator*() const{ 
             return binaryFunctor_(*iterator1_, scalarLike_); 
@@ -678,11 +678,11 @@ public:
         }
 
         void incrementCoordinate(const size_t axis){   
-            iterator1_. template incrementCoordinate(axis);
+            iterator1_.incrementCoordinate(axis);
         }
 
         void resetCoordinate(const size_t axis){   
-            iterator1_. template resetCoordinate(axis);
+            iterator1_.resetCoordinate(axis);
         }
         const value_type operator*() const{ 
             return binaryFunctor_(scalarLike_, *iterator1_); 

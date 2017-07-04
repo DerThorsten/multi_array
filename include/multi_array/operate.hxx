@@ -144,11 +144,14 @@ __MULTI_ARRAY_OP_DEF_CALLER__(int64_t);
 #undef __MULTI_ARRAY_OP_DEF_CALLER__
 
 
+// the old: std::enable_if<!std::is_arithmetic<T>::value ,int>::type = 0
+// the old: std::enable_if<!std::is_arithmetic<T>{} ,int>::type = 0
+
 //////////////////////////////////////////
 //  += *= /= etc. for Array::ValueType
 #define __MULTI_ARRAY_OP_DEF__(OP_SYMBOL)\
 template<class T, std::size_t DIM,\
-    typename std::enable_if<!std::is_arithmetic<T>{} ,int>::type = 0\
+    typename std::enable_if<!std::is_arithmetic<T>::value ,int>::type = 0\
 >\
 inline SmartMultiArray<T, DIM, false> &     \
 operator OP_SYMBOL (SmartMultiArray<T, DIM, false> & rhs, const T & lhs){  \
