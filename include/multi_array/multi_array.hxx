@@ -600,7 +600,12 @@ template<class E, class TE>
 inline
 SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     const ViewExpression<DIM, E, TE> & rhs
-)
+):  BaseType(),
+    shape_(),
+    strides_(),
+    size_(0),
+    data_(nullptr),
+    smart_handle_()
 {
     //std::cout<<"Copy Constructor from View Exp\n";
     this->expressionCopyConstructorHelper(static_cast<const E &>(rhs));
@@ -896,7 +901,7 @@ SmartMultiArray<T, DIM, IS_CONST>::operate (
 
         for(;;){
             f(data_[thisOffset], *eIter);
-            for(auto j=0; j<DIM; ++j) {
+            for(auto j=DIM-1; j>=0; --j) {
                 if(coordinate[j]+1 == shape_[j]) {
                     if(j == 0) {
                         return;
@@ -1047,12 +1052,11 @@ SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression (
     // general case
     // c-order 
     uint64_t thisOffset = 0;
-    Shape<DIM> coordinate;
-    std::fill(coordinate.begin(), coordinate.end(), 0);
+    Coordinate<DIM> coordinate(0);
 
     for(;;){
         data_[thisOffset] = *eIter;
-        for(auto j=0; j<DIM; ++j) {
+        for(int j=DIM-1; j>=0; --j) {
             if(coordinate[j]+1 == shape_[j]) {
                 if(j == 0) {
                     return;
@@ -1247,7 +1251,12 @@ SmartMultiArray<T, DIM, IS_CONST>::copy() const ->SmartMultiArray{
 template<class T, std::size_t DIM, bool IS_CONST>
 inline auto 
 SmartMultiArray<T, DIM, IS_CONST>::view() const -> SmartMultiArray {
-    return SmartMultiArray(*this);
+    SmartMultiArray ret;
+    ret.shape_ = shape_;
+    ret.strides_ = strides_;
+    ret.data_ = data_;
+    ret.smart_handle_ = smart_handle_;
+    return ret;
 }
 
 
@@ -1270,8 +1279,14 @@ inline bool
 SmartMultiArray<T, DIM, IS_CONST>::equal(
     const SmartMultiArray<_T, DIM, _IS_CONST> & other
 )const{
+
+    // TODO reimplement me
+
     typedef typename meta::PromoteType<T,_T>::type PromotedT;
     if(shape_ == other.shape_){
+
+
+        uint8_t res = 1;
         forEachOffset(shape_, strides_, other.strides_,
             [&](
                 const uint64_t offsetA,
@@ -1279,17 +1294,15 @@ SmartMultiArray<T, DIM, IS_CONST>::equal(
             ){
                 const auto & val = data_[offsetA];
                 const auto & otherVal = other.data_[offsetB];
-
                 const auto valA = static_cast<PromotedT>(val);
                 const auto valB = static_cast<PromotedT>(otherVal);
 
                 if(!detail_multi_array::areAlmostEqual(valA, valB)){
-                    return false;
+                    res = 0;
                 }
-
             }
         );
-        return true;
+        return bool(res);
     }
     else{
         return false;

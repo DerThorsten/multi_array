@@ -505,8 +505,11 @@ public:
         if(e1_.hasShape()){
             return e1_.shape(j);
         }
-        else{
+        else if(e2_.hasShape()){
             return e2_.shape(j);
+        }
+        else{
+            MULTI_ARRAY_CHECK(false,"both do not have a shape")
         }
     }
     
@@ -524,7 +527,7 @@ public:
             return e2_.strides(a);
         }
         else{
-            MULTI_ARRAY_CHECK(false, "both dont have a shape");
+            MULTI_ARRAY_CHECK(false, "both dont have a stride");
         }
     }
 
@@ -548,19 +551,24 @@ public:
 
     bool matchingStrides()const{
 
-        if(!e1_.hasStrides() || !e2_.hasStrides()){
-            return true;
+        if(e1_.matchingStrides() && e2_.matchingStrides()){
+            if(!e1_.hasStrides() || !e2_.hasStrides()){
+                return true;
+            }
+            else{
+                for(std::size_t a=0; a<DIM; ++a){
+                    const auto s1 = e1_.strides(a);
+                    const auto s2 = e2_.strides(a);
+
+                    if(s1!=0 && s2!=0 && s1!=s2){
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
         else{
-            for(std::size_t a=0; a<DIM; ++a){
-                const auto s1 = e1_.strides(a);
-                const auto s2 = e2_.strides(a);
-
-                if(s1!=0 && s2!=0 && s1!=s2){
-                    return false;
-                }
-            }
-            return true;
+            return false;
         }
     }
 

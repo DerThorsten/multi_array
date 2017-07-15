@@ -380,6 +380,7 @@ TEST_CASE("[ViewExpression] blackbox test"){
         auto zerosB = ma::zeros<ValueType>(3,2).transposedView();
         auto zerosC = ma::zeros<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
         auto zerosD = zerosA.view();
+
         REQUIRE(zerosA.equal(zerosA));
         REQUIRE(zerosA.equal(zerosB));
         REQUIRE(zerosA.equal(zerosC));
@@ -389,6 +390,7 @@ TEST_CASE("[ViewExpression] blackbox test"){
         auto onesB = ma::ones<ValueType>(3,2).transposedView();
         auto onesC = ma::ones<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
         auto onesD = onesA.view();
+
         REQUIRE(onesA.equal(onesA));
         REQUIRE(onesA.equal(onesB));
         REQUIRE(onesA.equal(onesC));
@@ -413,13 +415,68 @@ TEST_CASE("[ViewExpression] blackbox test"){
         SUBCASE("expression which do not need coordinate"){
 
             auto expA = 10*zerosA + 2*onesA + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+
+
             auto expB = 10*zerosB + 2*onesB + coordSumB +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
             auto expC = 10*zerosC + 2*onesC + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosC + 4));
             auto expD = 10*zerosD + 2*onesD + coordSumD +  ma::castExpr<int>( ma::sqrt(zerosD + 4));
 
-            auto expMixedA = 10*zerosA + 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosD + 4));
+
+
+
+
+
+            SUBCASE("matching strides A"){
+                auto e = ma::sqrt(zerosA + 4);
+                REQUIRE(e.matchingStrides());
+            }
+            SUBCASE("matching strides B"){
+                auto e = ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE(e.matchingStrides());
+            }
+            SUBCASE("matching strides c"){
+                auto e = coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides D"){
+                auto e = 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides E"){
+                auto e = 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides F"){
+                auto e = 10*zerosA + 2*onesB;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides G"){
+                auto e = 10*zerosA + 2*onesB + coordSumC;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides HHH"){
+                auto e = zerosA + coordSumC;
+            }
+            SUBCASE("matching strides HHH"){
+                auto e = coordSumC + zerosA;
+            }
+            SUBCASE("matching strides HH"){
+                auto e = zerosA + coordSumC + zerosA;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides H"){
+                auto e = 10*zerosA + 2*onesB + coordSumC + zerosA;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+
+            auto expMixedA = 10*zerosA + 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+            REQUIRE_FALSE(expMixedA.matchingStrides());
+
             auto expMixedB = 10*zerosD + 2*onesC + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
+            REQUIRE_FALSE(expMixedB.matchingStrides());
+
             auto expMixedC = 10*zerosD + 2*onesC + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
+            REQUIRE_FALSE(expMixedC.matchingStrides());
 
             auto shouldRes = ma::zeros<ValueType>(2,3);
             for(auto x0=0; x0<2; ++x0)
@@ -442,6 +499,52 @@ TEST_CASE("[ViewExpression] blackbox test"){
             REQUIRE(shouldRes.equal(resultB));
             REQUIRE(shouldRes.equal(resultC));
             REQUIRE(shouldRes.equal(resultD));
+
+
+
+            REQUIRE_EQ(zerosA(0,0),0);
+            REQUIRE_EQ(zerosA(0,1),0);
+            REQUIRE_EQ(zerosA(0,2),0);    
+            REQUIRE_EQ(zerosA(1,0),0);
+            REQUIRE_EQ(zerosA(1,1),0);
+            REQUIRE_EQ(zerosA(1,2),0);
+            REQUIRE_EQ(zerosC(0,0),0);
+            REQUIRE_EQ(zerosC(0,1),0);
+            REQUIRE_EQ(zerosC(0,2),0);    
+            REQUIRE_EQ(zerosC(1,0),0);
+            REQUIRE_EQ(zerosC(1,1),0);
+            REQUIRE_EQ(zerosC(1,2),0);
+
+
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedB(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedB(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedB(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedB(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedB(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedB(1,2));
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedC(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedC(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedC(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedC(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedC(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedC(1,2));
+
+
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedA(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedA(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedA(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedA(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedA(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedA(1,2));
+
+
+
+
+
+
             REQUIRE(shouldRes.equal(resultMixedA));
             REQUIRE(shouldRes.equal(resultMixedB));
             REQUIRE(shouldRes.equal(resultMixedC));
@@ -452,9 +555,10 @@ TEST_CASE("[ViewExpression] blackbox test"){
             ma::SmartMultiArray<ValueType, DIM> resultCCtr = expC;
             ma::SmartMultiArray<ValueType, DIM> resultDCtr = expD;
 
-            ma::SmartMultiArray<ValueType, DIM> resultMixedA = expMixedA;
+            
             ma::SmartMultiArray<ValueType, DIM> resultMixedB = expMixedB;
             ma::SmartMultiArray<ValueType, DIM> resultMixedC = expMixedC;
+            ma::SmartMultiArray<ValueType, DIM> resultMixedA = expMixedA;
 
             REQUIRE(shouldRes.equal(resultACtr));
             REQUIRE(shouldRes.equal(resultBCtr));
