@@ -1,7 +1,7 @@
 #pragma once
 
-#include "navigator.hxx"
-#include "order.hxx"
+#include "multi_array/navigator.hxx"
+#include "multi_array/order.hxx"
 
 namespace multi_array{
 namespace detail_for_each{

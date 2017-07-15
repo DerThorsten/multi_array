@@ -64,13 +64,13 @@ namespace multi_array{
             return offset_;
         }
 
-        const Shape<DIM> & coordinate()const{
+        const Coordinate<DIM> & coordinate()const{
             return coordinate_;
         }
     private:
         const Shape<DIM> & shape_;
         const Strides<DIM> & strides_;
-        Shape<DIM>  coordinate_;
+        Coordinate<DIM>  coordinate_;
 
         int64_t offset_;
     };  
@@ -147,7 +147,7 @@ namespace multi_array{
             return offsetB_;
         }
 
-        const Shape<DIM> & coordinate()const{
+        const Coordinate<DIM> & coordinate()const{
             return coordinate_;
         }
     private:
@@ -155,7 +155,7 @@ namespace multi_array{
         const Shape<DIM> & shape_;
         const Strides<DIM> & stridesA_;
         const Strides<DIM> & stridesB_;
-        Shape<DIM>  coordinate_;
+        Coordinate<DIM>  coordinate_;
 
         int64_t offsetA_;
         int64_t offsetB_;

@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <memory>
-
+#include "multi_array/pre_exisiting_memory_poliy.hxx"
 
 
 
@@ -16,9 +16,11 @@ namespace detail_multi_array{
     
     class SharedHandle{
     private:
-        template<class T>
+
+
+        template<class PTR_TYPE>
         struct ArrayDeleter{
-            ArrayDeleter(T * ptr)
+            ArrayDeleter(PTR_TYPE ptr)
             : ptr_(ptr){
 
             }
@@ -27,9 +29,28 @@ namespace detail_multi_array{
                 delete[] ptr_;
                 delete handle;
             }
-            T * ptr_;
+            PTR_TYPE ptr_;
         };
 
+
+        template<class PTR_TYPE>
+        struct FunctionCallingDeleter{
+            FunctionCallingDeleter(
+                PTR_TYPE ptr,
+                const std::function<void(PTR_TYPE)> & f
+            )
+            :   ptr_(ptr),
+                f_(f){
+
+            }
+            template<class H>
+            void operator()(H * handle) {
+                f(ptr_);
+                delete handle;
+            }
+            PTR_TYPE ptr_;
+            std::function<void(PTR_TYPE)>  f_;
+        };
 
 
         struct HandleType{};
@@ -39,6 +60,7 @@ namespace detail_multi_array{
         struct AllocNewTag{};
         struct CopyHandleTag{};
 
+
         // empty array
         SharedHandle()
         : handle_(){
@@ -46,9 +68,9 @@ namespace detail_multi_array{
 
 
         // alloc new mem
-        template<class U>
-        SharedHandle(U * ptr, const AllocNewTag & )
-        : handle_(new HandleType(), ArrayDeleter<U>(ptr)){
+        template<class PTR_TYPE>
+        SharedHandle(PTR_TYPE ptr, const AllocNewTag & )
+        : handle_(new HandleType(), ArrayDeleter<PTR_TYPE>(ptr)){
         }
 
 
@@ -56,6 +78,26 @@ namespace detail_multi_array{
         SharedHandle(const SharedHandle & other, const CopyHandleTag &)
         : handle_(other.handle_){
         }
+
+
+        // PreExistingMemoryPolicy
+        template<class PTR_TYPE>
+        SharedHandle(PTR_TYPE ptr, const PreExistingMemoryPolicy & preExistingMemoryPolicy)
+        : handle_(){
+            if(preExistingMemoryPolicy == DELETE_DATA_WHEN_DONE){
+                handle_ = SharedHandlePtr(new HandleType(),ArrayDeleter<PTR_TYPE>(ptr));
+            }
+            else{
+                handle_ = SharedHandlePtr(new HandleType());
+            }
+        }
+        // call functor when refcount goes to zero
+        template<class PTR_TYPE>
+        SharedHandle(PTR_TYPE ptr, const std::function<void(PTR_TYPE)> & f)
+        : handle_(new HandleType(),FunctionCallingDeleter<PTR_TYPE>(ptr,f)){
+        }
+
+
 
         long useCount() const{
             return handle_.use_count();

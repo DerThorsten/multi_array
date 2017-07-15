@@ -1,9 +1,13 @@
 #pragma once
 
 #include <complex>
+#include <utility>
 
 #include "multi_array/meta.hxx"
 #include "multi_array/functors.hxx"
+#include "multi_array/expr/view_expression.hxx"
+
+
 
 namespace multi_array{
 
@@ -19,23 +23,24 @@ class UnaryViewExpression;
 template<std::size_t DIM, class E1, class T1, class E2, class T2, class BinaryFunctor>
 class BinaryViewExpression;
 
-template<std::size_t DIM, class E, class T, class S, class BinaryFunctor>
-class BinaryViewExpressionScalarFirst;
 
-template<std::size_t DIM, class E, class T, class S, class BinaryFunctor>
-class BinaryViewExpressionScalarSecond;
+
+
+
 
 
 #define __MULTI_ARRAY_OP_DEF__(OP_SYMBOL, FUNCTOR_NAME, SCALAR_NAME)\
 template<std::size_t DIM, class E, class T>\
-inline BinaryViewExpressionScalarFirst<DIM, E, T, SCALAR_NAME, FUNCTOR_NAME<T, SCALAR_NAME> >\
+inline typename UnaryExprOpt<DIM, E, T, functors::BindScalarLeft< SCALAR_NAME, FUNCTOR_NAME<SCALAR_NAME,T>>>::type \
 operator OP_SYMBOL ( const SCALAR_NAME & number,const ViewExpression<DIM, E, T> & expression){\
-  return BinaryViewExpressionScalarFirst<DIM, E, T, SCALAR_NAME, FUNCTOR_NAME<T, SCALAR_NAME> >(number, expression);\
+    typedef functors::BindScalarLeft<SCALAR_NAME, FUNCTOR_NAME<SCALAR_NAME,T> > UnaryFunctor;\
+    return UnaryExprOpt<DIM, E, T, UnaryFunctor>::op(expression, UnaryFunctor(number));\
 }\
 template<std::size_t DIM, class E, class T>\
-inline BinaryViewExpressionScalarSecond<DIM, E, T, SCALAR_NAME, FUNCTOR_NAME<T, SCALAR_NAME> >\
+inline typename UnaryExprOpt<DIM, E, T, functors::BindScalarRight<SCALAR_NAME, FUNCTOR_NAME<T,SCALAR_NAME>>>::type \
 operator OP_SYMBOL (const ViewExpression<DIM, E, T> & expression,const SCALAR_NAME & number){\
-    return BinaryViewExpressionScalarSecond<DIM, E, T, SCALAR_NAME, FUNCTOR_NAME<T, SCALAR_NAME> >(expression, number);\
+    typedef functors::BindScalarRight<SCALAR_NAME, FUNCTOR_NAME<T,SCALAR_NAME> > UnaryFunctor;\
+    return UnaryExprOpt<DIM, E, T, UnaryFunctor>::op(expression, UnaryFunctor(number));\
 }
 #define __MULTI_ARRAY_OP_DEF_CALLER__(SCALAR_NAME)  \
     __MULTI_ARRAY_OP_DEF__(+, functors::Plus,       SCALAR_NAME); \
@@ -71,25 +76,27 @@ __MULTI_ARRAY_OP_DEF_CALLER__(int64_t);
 template<std::size_t DIM, class E, class T, \
     typename std::enable_if<!std::is_arithmetic<T>::value ,int>::type = 0\
 >\
-inline BinaryViewExpressionScalarFirst<DIM, E, T, T, FUNCTOR_NAME<T, T> >\
+inline typename UnaryExprOpt<DIM, E, T, functors::BindScalarLeft<T, FUNCTOR_NAME<T,T>>>::type \
 operator OP_SYMBOL (const T & number,const ViewExpression<DIM, E, T> & expression){\
-   return BinaryViewExpressionScalarFirst<DIM, E, T, T, FUNCTOR_NAME<T, T> >(number, expression);\
+   typedef functors::BindScalarLeft<T, FUNCTOR_NAME<T,T> > UnaryFunctor;\
+   return UnaryExprOpt<DIM, E, T, UnaryFunctor>::op(expression, UnaryFunctor(number));\
 }\
 template<std::size_t DIM, class E,class T, \
     typename std::enable_if< !std::is_arithmetic<T>::value ,int>::type = 0\
 >\
-inline BinaryViewExpressionScalarSecond<DIM, E, T, T, FUNCTOR_NAME<T, T> >\
+inline typename UnaryExprOpt<DIM, E, T, functors::BindScalarRight<T, FUNCTOR_NAME<T,T>>>::type \
 operator OP_SYMBOL (const ViewExpression<DIM, E, T> & expression,const T & number){\
-    return BinaryViewExpressionScalarSecond<DIM, E, T, T, FUNCTOR_NAME<T, T> >(expression, number);\
+    typedef functors::BindScalarRight<T, FUNCTOR_NAME<T,T> > UnaryFunctor;\
+    return UnaryExprOpt<DIM, E, T, UnaryFunctor>::op(expression, UnaryFunctor(number));\
 }\
 template<\
     std::size_t DIM, \
     class EA, class TA,\
     class EB, class TB\
 >\
-inline BinaryViewExpression<DIM, EA, TA, EB, TB, FUNCTOR_NAME<TA, TB> >\
+inline typename BinaryExprOpt<DIM, EA, TA, EB, TB, FUNCTOR_NAME<TA, TB>>::type \
 operator OP_SYMBOL (const ViewExpression<DIM, EA, TA> & expressionA,const ViewExpression<DIM, EB, TB> & expressionB){\
-    return BinaryViewExpression<DIM, EA, TA, EB, TB, FUNCTOR_NAME<TA, TB> >(expressionA, expressionB);\
+    return BinaryExprOpt<DIM, EA, TA, EB, TB, FUNCTOR_NAME<TA, TB>>::op(expressionA, expressionB);\
 }
 __MULTI_ARRAY_OP_DEF__(+, functors::Plus); 
 __MULTI_ARRAY_OP_DEF__(-, functors::Minus); 

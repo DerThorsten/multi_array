@@ -198,7 +198,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             using namespace multi_array;
 
             REQUIRE_EQ(array.smartHandle().useCount(),1);
-            auto subarray = array(Range(0,3), Range(0,4), NewAxis());
+            auto subarray = array(Range(0,3), Range(0,4), NewAxis<1>());
             REQUIRE_EQ(array.smartHandle().useCount(),2);
             REQUIRE_EQ(subarray.smartHandle().useCount(),2);
             
@@ -236,7 +236,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             using namespace multi_array;
 
             REQUIRE_EQ(array.smartHandle().useCount(),1);
-            auto subarray = array(all(), all(), NewAxis());
+            auto subarray = array(all(), all(), NewAxis<1>());
             REQUIRE_EQ(array.smartHandle().useCount(),2);
             REQUIRE_EQ(subarray.smartHandle().useCount(),2);
             
@@ -669,6 +669,26 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::reshape"){
             // ensure that no copy has been made
             REQUIRE_EQ(a.smartHandle().useCount(), 2);
             REQUIRE_EQ(a.data(),b.data());
+        }
+    }
+}
+
+
+TEST_CASE("[SmartMultiArray] SmartMultiArray::accumulate"){
+    
+    namespace ma = multi_array;
+
+    SUBCASE("1D"){
+
+        auto a  = ma::arange(0,4);
+
+        SUBCASE("SUM"){
+            auto s = a.sum();
+            REQUIRE_EQ(6,s);
+        }
+        SUBCASE("MEAN"){
+            auto m = a.mean();
+            REQUIRE_EQ(doctest::Approx(6.0/4),m);
         }
     }
 }

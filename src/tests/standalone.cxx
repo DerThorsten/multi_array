@@ -3,10 +3,7 @@
 #include <type_traits>
 
 #include "multi_array/multi_array.hxx"
-#include "multi_array/multi_array_factories.hxx"
 
-#include "multi_array/meta.hxx"
-#include "multi_array/runtime_check.hxx"
 
 
 
@@ -20,18 +17,34 @@ int main(){
 
 
 
-    {
-        auto a =  ma::ones<int>(2,3);
-        auto b =  ma::ones<int>(2,3);
-        auto c =  ma::ones<int>(2,3);
-        auto d =  c.transposedView();
-        std::cout<<"strides a "<<a.strides()<<"\n";
-        std::cout<<"strides c "<<c.strides()<<"\n";
-        std::cout<<"strides d "<<d.strides()<<"\n";
-        auto ad = a + d ;   
-        //std::cout<<typeid(ab).name()<<"\n";
-        std::cout<<"ad.matchingStrides() ?\n"<<ad.matchingStrides()<<"\n";
-      
-    }
+     {
+         typedef double ValueType;
+         const static std::size_t DIM = 5;
+
+        
+
+        // some arrays with real data
+        auto a = ma::zeros<ValueType>(10,10,10,3,5);
+        auto b = ma::zeros<ValueType>(3,5);
+
+
+
+        // ca and cb are the same
+
+        // ca = b[None,None,None,:,:]
+        auto ca = b(ma::newAxis(), ma::newAxis(),ma::newAxis(), ma::all(), ma::all());
+        // cb = b[None,None,None,:,:]
+        auto cb = b(ma::NewAxis<3>(), ma::all(), ma::all());
+        
+
+
+        /// cc = b[None,None,None,...]
+        //uto cc = b(ma::newAxis(), ma::newAxis(),ma::newAxis(), ma::ellipsis());
+        /// cc = b[None,None,None,...]
+        //uto cd = b(ma::NewAxis<3>(),ma::ellipsis());
+        ///auto cd = b(ma::ellipsis());
+
+         
+     }
 
 }

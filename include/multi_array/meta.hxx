@@ -98,11 +98,11 @@ namespace meta{
 
   
 
-    template<class COND, class TYPE, class ... ARGS>
+    template<class COND, class ARG, class ... ARGS>
     struct  LazyEvalIfSwitch : public EvalIf<
         typename COND::type, 
-        TYPE,
-        LazyEvalIfSwitch<ARGS ... >
+        ARG,
+        typename LazyEvalIfSwitch<ARGS ... >::type
     >
     {
 
