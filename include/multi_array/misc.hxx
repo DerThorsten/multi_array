@@ -5,7 +5,52 @@
 
 #include "multi_array/meta/variadic.hxx"
 #include "multi_array/order.hxx"
+#include "multi_array/meta.hxx"
+
 namespace multi_array{
+
+
+    enum AccWithCoordEnum{
+        AccWithCoord
+    };
+
+
+
+
+
+
+    template<class T, std::size_t DIM>
+    class TinyVector
+    : public std::array<T, DIM>{
+    public:
+        TinyVector()
+        : std::array<T, DIM>(){
+        }
+        TinyVector(const T & val)
+        : std::array<T, DIM>(){
+            std::fill(this->begin(), this->end(), val);
+        }
+    private:
+    };
+
+
+    namespace detail_multi_array{
+
+        // TODO implement me with meta programming
+        inline bool areAlmostEqual(const float x, const float y)
+        {
+            return std::fabs(x-y) < 1e-6f;
+        }
+        inline bool areAlmostEqual(const double x, const double y)
+        {
+            return std::fabs(x-y) < 1e-6f;
+        }
+        template<class T>
+        inline bool areAlmostEqual(const T & x, const T & y){
+            return x == y;
+        }
+    }
+
 
 
 
@@ -24,12 +69,23 @@ namespace multi_array{
     //    return DataType<T>();
     //}
 
+    template<std::size_t DIM>
+    class Coordinate : public TinyVector<int64_t, DIM>{
+    public:
+        typedef TinyVector<int64_t, DIM> BaseType;
+        Coordinate(const int64_t defaultValue = 0 )
+        : BaseType(defaultValue){
+        }
+        
+    };
+
+
 
 
     template<std::size_t DIM>
-    class Shape : public std::array<int64_t, DIM>{
+    class Shape : public TinyVector<int64_t, DIM>{
     public:
-        Shape(): std::array<int64_t, DIM>(){
+        Shape(): TinyVector<int64_t, DIM>(){
 
         }
         bool operator== (const Shape & other)const{
@@ -85,12 +141,62 @@ namespace multi_array{
             }
             return res;
         }
+    };
 
+
+    class ShapesNotBroadcastableException: public std::runtime_error{
+    public:
+        template<std::size_t DIM>
+        ShapesNotBroadcastableException(
+            const Shape<DIM> & shapeA,
+            const Shape<DIM> & shapeB
+        )
+        :   std::runtime_error(std::string("TODO")){
+        }
+        ShapesNotBroadcastableException(const std::string & msg = std::string())
+        :   std::runtime_error(msg.c_str()){
+        }
     };
 
 
 
+    template<std::size_t DIM>
+    inline bool canBroadcastShapes(
+        const Shape<DIM> & shapeA,
+        const Shape<DIM> & shapeB
+    ){
+        for(auto d=0; d<DIM; ++d){
+            const auto sA = shapeA[d];
+            const auto sB = shapeB[d];
+            if(sA!=1 && sB[d]!=1 && sA!=sB)
+                return false;
+        }
+        return true;
+    }
 
+
+    template<std::size_t DIM>
+    Shape<DIM> broadcastShapes(
+        const Shape<DIM> & shapeA,
+        const Shape<DIM> & shapeB
+    ){
+        Shape<DIM> res;
+
+        for(auto d=0; d<DIM; ++d){
+            const auto sA = shapeA[d];
+            const auto sB = shapeB[d];
+
+
+            // check for compatibility
+            if(sA!=1 && sB[d]!=1 && sA!=sB){
+                throw ShapesNotBroadcastableException(shapeA, shapeB);
+            }
+            // since we checked for compatibility we can 
+            // just take the max
+            res[d] = std::max(sA, sB);
+        }
+        return res;
+    }
 
         
     ///\cond
@@ -120,9 +226,6 @@ namespace multi_array{
             result[CURRENT_INDEX] = arg;
             getShapeImpl<CURRENT_INDEX+1, DIM, ARGS ...>(result, std::forward<ARGS>(args) ...);
         }
-
-        
-        
     }
     ///\endcond
 
@@ -150,9 +253,9 @@ namespace multi_array{
 
 
     template<std::size_t DIM>
-    class Strides : public std::array<int64_t, DIM>{
+    class Strides : public TinyVector<int64_t, DIM>{
     public:
-        Strides(): std::array<int64_t, DIM>(){
+        Strides(): TinyVector<int64_t, DIM>(){
 
         }
         bool operator== (const Strides & other)const{
@@ -180,7 +283,17 @@ namespace multi_array{
 
 
 
-    struct NewAxis{};   
+
+
+
+    template<std::size_t DIM>
+    struct NewAxis
+    : public meta::SizeT<DIM>{
+    };   
+
+
+
+
     struct All{};
     struct Range{
         Range(const int64_t begin, const int64_t end)
@@ -212,12 +325,19 @@ namespace multi_array{
         }
         int64_t begin_,end_, step_;
     };
+    struct Ellipsis{};
 
 
-    inline NewAxis newAxis(){
-        return NewAxis();
+
+
+
+    constexpr NewAxis<1> newAxis(){
+        return NewAxis<1>();
     }
-    inline All all(){
+
+
+
+    constexpr All all(){
         return All();
     }
     inline Range range(const int64_t begin, const int64_t end){
@@ -226,7 +346,9 @@ namespace multi_array{
     inline StridedRange range(const int64_t begin, const int64_t end, const int64_t step){
         return StridedRange(begin, end, step);
     }
-
+    constexpr Ellipsis ellipsis(){
+        return Ellipsis();
+    }
 
 
 

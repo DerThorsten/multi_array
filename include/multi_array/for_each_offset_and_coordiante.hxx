@@ -10,11 +10,11 @@ namespace multi_array{
 namespace detail_for_each_offset{
 
     template<std::size_t DIM, uint8_t ORDER >
-    struct ForEachOffsetImpl;
+    struct ForEachOffsetAndCoordinateImpl;
 
     // c-order fallback
     template<std::size_t DIM>
-    struct ForEachOffsetImpl<DIM, uint8_t(Order::C_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::C_ORDER)>{
         const static std::size_t MAX_DIM = DIM - 1;
         template<class F>
         static void op(const Shape<DIM> & shape, const Strides<DIM> & strides, F && f){
@@ -27,7 +27,7 @@ namespace detail_for_each_offset{
             
             for(;;){
 
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
 
                 for(int j=int(MAX_DIM); j>=0; --j) {
 
@@ -61,7 +61,7 @@ namespace detail_for_each_offset{
             
             for(;;){
 
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
 
                 for(int j=int(MAX_DIM); j>=0; --j) {
 
@@ -86,7 +86,7 @@ namespace detail_for_each_offset{
 
     // f-order fallback
     template<std::size_t DIM>
-    struct ForEachOffsetImpl<DIM, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::F_ORDER)>{
         const static std::size_t MAX_DIM = DIM - 1;
         template<class F>
         static void op(const Shape<DIM> & shape, const Strides<DIM> & strides, F && f){
@@ -99,7 +99,7 @@ namespace detail_for_each_offset{
             
             for(;;){
 
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
 
                 for(int j=0; j<DIM; --j) {
 
@@ -134,7 +134,7 @@ namespace detail_for_each_offset{
             
             for(;;){
 
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
 
                 for(int j=0; j<DIM; --j) {
 
@@ -156,7 +156,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<0, uint8_t(Order::C_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<0, uint8_t(Order::C_ORDER)>{
         template<class F>
         static void op(const Shape<0> & shape, const Strides<0> & strides, F && f){
             f(0);
@@ -175,14 +175,14 @@ namespace detail_for_each_offset{
 
 
     template<>
-    struct ForEachOffsetImpl<1, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<1, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<1> & shape, const Strides<1> & strides, F && f){
             
             Navigator<1> navigator(shape, strides);
             const auto & s = shape;
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -197,7 +197,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<2, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<2, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<2> & shape, const Strides<2> & strides, F && f){
             
@@ -205,7 +205,7 @@ namespace detail_for_each_offset{
             const auto & s = shape;
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -221,7 +221,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<3, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<3, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<3> & shape, const Strides<3> & strides, F && f){
             
@@ -230,7 +230,7 @@ namespace detail_for_each_offset{
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(2, 0); navigator.get(2)<s[2]; navigator.increment(2)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -249,7 +249,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<4, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<4, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<4> & shape, const Strides<4> & strides, F && f){
             
@@ -259,7 +259,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(2, 0); navigator.get(2)<s[2]; navigator.increment(2))
             for(navigator.set(3, 0); navigator.get(3)<s[3]; navigator.increment(3)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -278,7 +278,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<5, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<5, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<5> & shape, const Strides<5> & strides, F && f){
             
@@ -290,7 +290,7 @@ namespace detail_for_each_offset{
             for(navigator.set(3, 0); navigator.get(3)<s[3]; navigator.increment(3))
             for(navigator.set(4, 0); navigator.get(4)<s[4]; navigator.increment(4))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -310,7 +310,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<6, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<6, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<6> & shape, const Strides<6> & strides, F && f){
             
@@ -322,7 +322,7 @@ namespace detail_for_each_offset{
             for(navigator.set(3, 0); navigator.get(3)<s[3]; navigator.increment(3))
             for(navigator.set(4, 0); navigator.get(4)<s[4]; navigator.increment(4))
             for(navigator.set(5, 0); navigator.get(5)<s[5]; navigator.increment(5)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -343,7 +343,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<7, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<7, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<7> & shape, const Strides<7> & strides, F && f){
             
@@ -356,7 +356,7 @@ namespace detail_for_each_offset{
             for(navigator.set(4, 0); navigator.get(4)<s[4]; navigator.increment(4))
             for(navigator.set(5, 0); navigator.get(5)<s[5]; navigator.increment(5))
             for(navigator.set(6, 0); navigator.get(6)<s[6]; navigator.increment(6)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -378,7 +378,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<8, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<8, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<8> & shape, const Strides<8> & strides, F && f){
             
@@ -392,7 +392,7 @@ namespace detail_for_each_offset{
             for(navigator.set(5, 0); navigator.get(5)<s[5]; navigator.increment(5))
             for(navigator.set(6, 0); navigator.get(6)<s[6]; navigator.increment(6))
             for(navigator.set(7, 0); navigator.get(7)<s[7]; navigator.increment(7)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -415,7 +415,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<9, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<9, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<9> & shape, const Strides<9> & strides, F && f){
             
@@ -430,7 +430,7 @@ namespace detail_for_each_offset{
             for(navigator.set(6, 0); navigator.get(6)<s[6]; navigator.increment(6))
             for(navigator.set(7, 0); navigator.get(7)<s[7]; navigator.increment(7))
             for(navigator.set(8, 0); navigator.get(8)<s[8]; navigator.increment(8)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -454,7 +454,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<10, uint8_t(Order::C_ORDER) >{
+    struct ForEachOffsetAndCoordinateImpl<10, uint8_t(Order::C_ORDER) >{
         template<class F>
         static void op(const Shape<10> & shape, const Strides<10> & strides, F && f){
             
@@ -470,7 +470,7 @@ namespace detail_for_each_offset{
             for(navigator.set(7, 0); navigator.get(7)<s[7]; navigator.increment(7))
             for(navigator.set(8, 0); navigator.get(8)<s[8]; navigator.increment(8))
             for(navigator.set(9, 0); navigator.get(9)<s[9]; navigator.increment(9)){
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -496,7 +496,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<0, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<0, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<0> & shape, const Strides<0> & strides, F && f){
             f(0);
@@ -514,7 +514,7 @@ namespace detail_for_each_offset{
     };
 
     template<>
-    struct ForEachOffsetImpl<1, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<1, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<1> & shape, const Strides<1> & strides, F && f){
             
@@ -522,7 +522,7 @@ namespace detail_for_each_offset{
             const auto & s = shape;
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
         template<class F>
@@ -532,13 +532,13 @@ namespace detail_for_each_offset{
             const auto & s = shape;
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<2, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<2, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<2> & shape, const Strides<2> & strides, F && f){
             
@@ -547,7 +547,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -559,13 +559,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<3, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<3, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<3> & shape, const Strides<3> & strides, F && f){
             
@@ -575,7 +575,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -588,13 +588,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<4, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<4, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<4> & shape, const Strides<4> & strides, F && f){
             
@@ -605,7 +605,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -619,13 +619,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<5, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<5, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<5> & shape, const Strides<5> & strides, F && f){
             
@@ -637,7 +637,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -652,13 +652,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<6, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<6, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<6> & shape, const Strides<6> & strides, F && f){
             
@@ -671,7 +671,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -687,13 +687,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<7, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<7, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<7> & shape, const Strides<7> & strides, F && f){
             
@@ -707,7 +707,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -724,13 +724,13 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<8, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<8, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<8> & shape, const Strides<8> & strides, F && f){
             
@@ -745,7 +745,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -763,13 +763,13 @@ namespace detail_for_each_offset{
             for(navigator.set(6, 0); navigator.get(6)<s[1]; navigator.increment(6))
             for(navigator.set(7, 0); navigator.get(7)<s[1]; navigator.increment(7))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<9, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<9, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<9> & shape, const Strides<9> & strides, F && f){
             
@@ -785,7 +785,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -804,13 +804,13 @@ namespace detail_for_each_offset{
             for(navigator.set(7, 0); navigator.get(7)<s[1]; navigator.increment(7))
             for(navigator.set(8, 0); navigator.get(8)<s[1]; navigator.increment(8))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
 
     template<>
-    struct ForEachOffsetImpl<10, uint8_t(Order::F_ORDER)>{
+    struct ForEachOffsetAndCoordinateImpl<10, uint8_t(Order::F_ORDER)>{
         template<class F>
         static void op(const Shape<10> & shape, const Strides<10> & strides, F && f){
             
@@ -827,7 +827,7 @@ namespace detail_for_each_offset{
             for(navigator.set(1, 0); navigator.get(1)<s[1]; navigator.increment(1))
             for(navigator.set(0, 0); navigator.get(0)<s[0]; navigator.increment(0))
             {
-                f(navigator.offset());
+                f(navigator.offset(), navigator.coordinate());
             }
         }
 
@@ -847,7 +847,7 @@ namespace detail_for_each_offset{
             for(navigator.set(8, 0); navigator.get(8)<s[1]; navigator.increment(8))
             for(navigator.set(9, 0); navigator.get(9)<s[1]; navigator.increment(9))
             {
-                f(navigator.offsetA(), navigator.offsetB());
+                f(navigator.offsetA(), navigator.offsetB(), navigator.coordinate());
             }
         }
     };
@@ -855,18 +855,18 @@ namespace detail_for_each_offset{
 ///\endcond
 
 template<size_t DIM, class F>
-void forEachOffset(
+void forEachOffsetAndCoordinate(
     const Shape<DIM> & shape,
     const Strides<DIM> & strides,
     const Order & coordianteOrder,
     F && f
 ){
     if(coordianteOrder == Order::C_ORDER){
-        detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::C_ORDER)>::op(
+        detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::C_ORDER)>::op(
             shape, strides, std::forward<F>(f));
     }
     else if (coordianteOrder == Order::F_ORDER){
-        detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::F_ORDER)>::op(
+        detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::F_ORDER)>::op(
             shape, strides, std::forward<F>(f));
     }
     else{
@@ -877,18 +877,18 @@ void forEachOffset(
 
 
 template<size_t DIM, class F>
-void forEachOffset(
+void forEachOffsetAndCoordinate(
     const Shape<DIM> & shape,
     const Strides<DIM> & strides,
     F && f
 ){
-    detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::C_ORDER)>::op(
+    detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::C_ORDER)>::op(
         shape, strides, std::forward<F>(f));
 }
 
 
 template<size_t DIM, class F>
-void forEachOffset(
+void forEachOffsetAndCoordinate(
     const Shape<DIM> & shape,
     const Strides<DIM> & stridesA,
     const Strides<DIM> & stridesB,
@@ -896,11 +896,11 @@ void forEachOffset(
     F && f
 ){
     if(coordianteOrder == Order::C_ORDER){
-        detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::C_ORDER)>::op(
+        detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::C_ORDER)>::op(
             shape, stridesA, stridesB, std::forward<F>(f));
     }
     else if (coordianteOrder == Order::F_ORDER){
-        detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::F_ORDER)>::op(
+        detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::F_ORDER)>::op(
             shape, stridesA, stridesB, std::forward<F>(f));
     }
     else{
@@ -910,13 +910,13 @@ void forEachOffset(
 
 
 template<size_t DIM, class F>
-void forEachOffset(
+void forEachOffsetAndCoordinate(
     const Shape<DIM> & shape,
     const Strides<DIM> & stridesA,
     const Strides<DIM> & stridesB,
     F && f
 ){
-    detail_for_each_offset::ForEachOffsetImpl<DIM, uint8_t(Order::C_ORDER)>::op(
+    detail_for_each_offset::ForEachOffsetAndCoordinateImpl<DIM, uint8_t(Order::C_ORDER)>::op(
         shape, stridesA,stridesB, std::forward<F>(f));
 }
 

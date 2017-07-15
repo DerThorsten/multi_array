@@ -231,19 +231,392 @@ TEST_CASE("[BinaryViewExpression] assign to array"){
 }
 
 
-TEST_CASE("[ViewExpression] compound view expression"){
+
+
+TEST_CASE("[ViewExpression] math view expressions"){
 
     namespace ma = multi_array;
     
-    SUBCASE("2D"){
-        auto a = ma::zeros<int>(12);
-        auto b = ma::ones<int>(12);
-        auto c = ma::arange(12);
-        auto d = ma::arange(12,24);
-        a = (b + 2);
+    
+
+
+    SUBCASE("NoCast "){
+        typedef double ValueType;
+        const static std::size_t DIM = 2;
+
+        // the coordinates as lazy  implicit 
+        // shapeless zero overhead expression
+        const static ma::CoordExpr<DIM,0> x0;
+        const static ma::CoordExpr<DIM,1> x1;
+
+
+
+        // some arrays with real data
+        auto a = ma::zeros<ValueType>(5,5);
+        auto b = ma::ones<ValueType>(5,5);
+        REQUIRE_FALSE(a.empty());
+        
+
+        a = 5.0 - (x0 + ma::exp(x1));
+
+        // the same as
+        for(auto x0=0; x0<5; ++x0)
+        for(auto x1=0; x1<5; ++x1){
+            a(x0,x1) = 5.0 - (static_cast<ValueType>(x0) + std::exp(x1));
+        }
     }
+    #if 0
+    SUBCASE("Implicit Coordinates"){
+
+        typedef double ValueType;
+        const static std::size_t DIM = 2;
+
+        // the coordinates as lazy  implicit 
+        // shapeless zero overhead expression
+        const static ma::CoordExpr<DIM,0> x0;
+        const static ma::CoordExpr<DIM,1> x1;
+
+        //// constant value shapeless arrays
+        //// as zero overhead expression
+        //const static ma::ValueExpr<DIM,ValueType> ones(1);
+        //const static ma::ValueExpr<DIM,ValueType> twos(2);
+
+        // some arrays with real data
+        auto a = ma::zeros<ValueType>(5,5);
+        auto b = ma::ones<ValueType>(5,5);
+
+        
+        auto expression = 5.0 - (x0 + ma::exp(x1));
+        REQUIRE_FALSE(expression.hasShape());
+
+        // the same as
+        for(auto x0=0; x0<5; ++x0)
+        for(auto x1=0; x1<5; ++x1){
+            a(x0,x1) = 5.0 - (ValueType(x0) + std::exp(x1));
+        }
+    }
+    
+    SUBCASE("1D"){
+        auto a = ma::zeros<int>(5);
+        auto b = ma::ones<int>(5);
+        auto c = ma::arange(5);
+        auto d = ma::arange(5,10);
+        
+
+
+        auto expression = ma::fabs(ma::exp(b+c+2)*3.5);
+        REQUIRE(expression.hasShape());
+        a = expression;
+
+    }
+    SUBCASE("All "){
+
+        typedef double ValueType;
+        const static std::size_t DIM = 2;
+
+        // the coordinates as lazy  implicit 
+        // shapeless zero overhead expression
+        const static ma::CoordExpr<DIM,0> x0;
+        const static ma::CoordExpr<DIM,1> x1;
+
+
+
+        // some arrays with real data
+        auto a = ma::zeros<ValueType>(5,5);
+        auto b = ma::ones<ValueType>(5,5);
+        REQUIRE_FALSE(a.empty());
+        
+
+        a = 5.0 - (ma::castExpr<ValueType>(x0) + ma::exp(x1));
+
+        // the same as
+        for(auto x0=0; x0<5; ++x0)
+        for(auto x1=0; x1<5; ++x1){
+            a(x0,x1) = 5.0 - (static_cast<ValueType>(x0) + std::exp(x1));
+        }
+    }
+    #endif
+
 }
 
 
+TEST_CASE("[ViewExpression] blackbox test"){
+
+    namespace ma = multi_array;
+    
+    
+    SUBCASE("2D"){
+
+        typedef int ValueType;
+        const static std::size_t DIM = 2;
+
+        // the coordinates as lazy  implicit 
+        // shapeless zero overhead expression
+        const static ma::CoordExpr<DIM,0> x0;
+        const static ma::CoordExpr<DIM,1> x1;
+
+        // create arrays with same data but
+        // in different variants (strides, transposed etc)
+
+        // to write into non empty
+        auto resultA = ma::zeros<ValueType>(2,3);
+        auto resultB = ma::zeros<ValueType>(3,2).transposedView();
+        auto resultC = ma::zeros<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
+
+        auto resultMixedA = ma::zeros<ValueType>(2,3);
+        auto resultMixedB = ma::zeros<ValueType>(3,2).transposedView();
+        auto resultMixedC = ma::zeros<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
+
+        REQUIRE_EQ(resultC.shape(0),2);
+        REQUIRE_EQ(resultC.shape(1),3);
+
+        auto resultD = resultA.view();
+        REQUIRE(resultA.equal(resultA));
+        REQUIRE(resultA.equal(resultB));
+        REQUIRE(resultA.equal(resultC));
+        REQUIRE(resultA.equal(resultD));
+
+        auto zerosA = ma::zeros<ValueType>(2,3);
+        auto zerosB = ma::zeros<ValueType>(3,2).transposedView();
+        auto zerosC = ma::zeros<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
+        auto zerosD = zerosA.view();
+
+        REQUIRE(zerosA.equal(zerosA));
+        REQUIRE(zerosA.equal(zerosB));
+        REQUIRE(zerosA.equal(zerosC));
+        REQUIRE(zerosA.equal(zerosD));
+
+        auto onesA = ma::ones<ValueType>(2,3);
+        auto onesB = ma::ones<ValueType>(3,2).transposedView();
+        auto onesC = ma::ones<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
+        auto onesD = onesA.view();
+
+        REQUIRE(onesA.equal(onesA));
+        REQUIRE(onesA.equal(onesB));
+        REQUIRE(onesA.equal(onesC));
+        REQUIRE(onesA.equal(onesD));
+
+        auto coordSumA = ma::ones<ValueType>(2,3);
+        auto coordSumB = ma::ones<ValueType>(3,2).transposedView();
+        auto coordSumC = ma::ones<ValueType>(4,6)(ma::range(0,4,2),ma::range(0,6,2));
+        auto coordSumD = coordSumA.view();
+
+        for(auto x0=0; x0<2; ++x0)
+        for(auto x1=0; x1<3; ++x1){
+            coordSumA(x0, x1) = x0 + x1;
+            coordSumB(x0, x1) = x0 + x1;
+            coordSumC(x0, x1) = x0 + x1;
+        }
+        REQUIRE(coordSumA.equal(coordSumA));
+        REQUIRE(coordSumA.equal(coordSumB));
+        REQUIRE(coordSumA.equal(coordSumC));
+        REQUIRE(coordSumA.equal(coordSumD));
+
+        SUBCASE("expression which do not need coordinate"){
+
+            auto expA = 10*zerosA + 2*onesA + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+
+
+            auto expB = 10*zerosB + 2*onesB + coordSumB +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
+            auto expC = 10*zerosC + 2*onesC + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosC + 4));
+            auto expD = 10*zerosD + 2*onesD + coordSumD +  ma::castExpr<int>( ma::sqrt(zerosD + 4));
+
+
+
+
+
+
+            SUBCASE("matching strides A"){
+                auto e = ma::sqrt(zerosA + 4);
+                REQUIRE(e.matchingStrides());
+            }
+            SUBCASE("matching strides B"){
+                auto e = ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE(e.matchingStrides());
+            }
+            SUBCASE("matching strides c"){
+                auto e = coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides D"){
+                auto e = 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides E"){
+                auto e = 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides F"){
+                auto e = 10*zerosA + 2*onesB;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides G"){
+                auto e = 10*zerosA + 2*onesB + coordSumC;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides HHH"){
+                auto e = zerosA + coordSumC;
+            }
+            SUBCASE("matching strides HHH"){
+                auto e = coordSumC + zerosA;
+            }
+            SUBCASE("matching strides HH"){
+                auto e = zerosA + coordSumC + zerosA;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+            SUBCASE("matching strides H"){
+                auto e = 10*zerosA + 2*onesB + coordSumC + zerosA;
+                REQUIRE_FALSE(e.matchingStrides());
+            }
+
+            auto expMixedA = 10*zerosA + 2*onesB + coordSumC +  ma::castExpr<int>( ma::sqrt(zerosA + 4));
+            REQUIRE_FALSE(expMixedA.matchingStrides());
+
+            auto expMixedB = 10*zerosD + 2*onesC + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
+            REQUIRE_FALSE(expMixedB.matchingStrides());
+
+            auto expMixedC = 10*zerosD + 2*onesC + coordSumA +  ma::castExpr<int>( ma::sqrt(zerosB + 4));
+            REQUIRE_FALSE(expMixedC.matchingStrides());
+
+            auto shouldRes = ma::zeros<ValueType>(2,3);
+            for(auto x0=0; x0<2; ++x0)
+            for(auto x1=0; x1<3; ++x1){
+                shouldRes(x0, x1) = 10.0 * int(0) + 2*int(1) + int(x0+x1) + static_cast<int>(std::sqrt(int(0)+4));
+            }
+
+
+            // write into existing arrays with matching striding
+            resultA =  expA;
+            resultB =  expB;
+            resultC =  expC;
+            resultD =  expD;
+
+            resultMixedA =  expMixedA;
+            resultMixedB =  expMixedB;
+            resultMixedC =  expMixedC;
+
+            REQUIRE(shouldRes.equal(resultA));
+            REQUIRE(shouldRes.equal(resultB));
+            REQUIRE(shouldRes.equal(resultC));
+            REQUIRE(shouldRes.equal(resultD));
+
+
+
+            REQUIRE_EQ(zerosA(0,0),0);
+            REQUIRE_EQ(zerosA(0,1),0);
+            REQUIRE_EQ(zerosA(0,2),0);    
+            REQUIRE_EQ(zerosA(1,0),0);
+            REQUIRE_EQ(zerosA(1,1),0);
+            REQUIRE_EQ(zerosA(1,2),0);
+            REQUIRE_EQ(zerosC(0,0),0);
+            REQUIRE_EQ(zerosC(0,1),0);
+            REQUIRE_EQ(zerosC(0,2),0);    
+            REQUIRE_EQ(zerosC(1,0),0);
+            REQUIRE_EQ(zerosC(1,1),0);
+            REQUIRE_EQ(zerosC(1,2),0);
+
+
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedB(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedB(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedB(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedB(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedB(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedB(1,2));
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedC(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedC(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedC(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedC(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedC(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedC(1,2));
+
+
+
+            REQUIRE_EQ(shouldRes(0,0),resultMixedA(0,0));
+            REQUIRE_EQ(shouldRes(0,1),resultMixedA(0,1));
+            REQUIRE_EQ(shouldRes(0,2),resultMixedA(0,2));    
+            REQUIRE_EQ(shouldRes(1,0),resultMixedA(1,0));
+            REQUIRE_EQ(shouldRes(1,1),resultMixedA(1,1));
+            REQUIRE_EQ(shouldRes(1,2),resultMixedA(1,2));
+
+
+
+
+
+
+            REQUIRE(shouldRes.equal(resultMixedA));
+            REQUIRE(shouldRes.equal(resultMixedB));
+            REQUIRE(shouldRes.equal(resultMixedC));
+
+            // write  constructor
+            ma::SmartMultiArray<ValueType, DIM> resultACtr = expA;
+            ma::SmartMultiArray<ValueType, DIM> resultBCtr = expB;
+            ma::SmartMultiArray<ValueType, DIM> resultCCtr = expC;
+            ma::SmartMultiArray<ValueType, DIM> resultDCtr = expD;
+
+            
+            ma::SmartMultiArray<ValueType, DIM> resultMixedB = expMixedB;
+            ma::SmartMultiArray<ValueType, DIM> resultMixedC = expMixedC;
+            ma::SmartMultiArray<ValueType, DIM> resultMixedA = expMixedA;
+
+            REQUIRE(shouldRes.equal(resultACtr));
+            REQUIRE(shouldRes.equal(resultBCtr));
+            REQUIRE(shouldRes.equal(resultCCtr));
+            REQUIRE(shouldRes.equal(resultDCtr));
+            REQUIRE(shouldRes.equal(resultMixedA));
+            REQUIRE(shouldRes.equal(resultMixedB));
+            REQUIRE(shouldRes.equal(resultMixedC));
+
+            // write into empty
+            ma::SmartMultiArray<ValueType, DIM> resultAEmpty;
+            ma::SmartMultiArray<ValueType, DIM> resultBEmpty;
+            ma::SmartMultiArray<ValueType, DIM> resultCEmpty;
+            ma::SmartMultiArray<ValueType, DIM> resultDEmpty;
+
+            ma::SmartMultiArray<ValueType, DIM> resultMixedAEmpty;
+            ma::SmartMultiArray<ValueType, DIM> resultMixedBEmpty;
+            ma::SmartMultiArray<ValueType, DIM> resultMixedCEmpty;
+
+            resultAEmpty = expA;
+            resultBEmpty = expB;
+            resultCEmpty = expC;
+            resultDEmpty = expD;
+
+            resultMixedAEmpty = expMixedA;
+            resultMixedBEmpty = expMixedB;
+            resultMixedCEmpty = expMixedC;
+
+            REQUIRE(shouldRes.equal(resultAEmpty));
+            REQUIRE(shouldRes.equal(resultBEmpty));
+            REQUIRE(shouldRes.equal(resultCEmpty));
+            REQUIRE(shouldRes.equal(resultDEmpty));
+
+            REQUIRE(shouldRes.equal(resultMixedAEmpty));
+            REQUIRE(shouldRes.equal(resultMixedBEmpty));
+            REQUIRE(shouldRes.equal(resultMixedCEmpty));
+
+
+            
+
+
+
+        }
+
+
+
+            
+        //auto expression = 5.0 - (x0 + ma::exp(x1));
+        //REQUIRE_FALSE(expression.hasShape());
+        //// the same as
+        //for(auto x0=0; x0<5; ++x0)
+        //for(auto x1=0; x1<5; ++x1){
+        //    a(x0,x1) = 5.0 - (ValueType(x0) + std::exp(x1));
+        //}
+
+    }
+    
+
+}
 
 TEST_SUITE_END();

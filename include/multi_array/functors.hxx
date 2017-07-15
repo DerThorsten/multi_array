@@ -1,19 +1,10 @@
 #pragma once
 
+#include <cmath>
 
-#include <iostream>
-#include <memory>
-#include <type_traits>
-#include <utility>
+#include "multi_array/meta/promote_real.hxx"
+#include "multi_array/meta/promote_type.hxx"
 
-
-#include "meta.hxx"
-#include "shared_handle.hxx"
-#include "misc.hxx"
-#include "indexing_types.hxx"
-#include "bracket_op_dispatcher.hxx"
-#include "view_expression.hxx"
-#include "operate.hxx"
 
 
 namespace multi_array{
@@ -134,6 +125,144 @@ namespace multi_array{
 
 
 
+    template<class T, class EXPONENT_TYPE>
+    struct Pow { 
+        typedef typename multi_array::meta::PromoteRealType<T,EXPONENT_TYPE>::type type;
+        typedef Pow<T,EXPONENT_TYPE> SelfType;
+
+        static type op(const T& x, const EXPONENT_TYPE& exponent){ 
+            return std::pow(x, exponent);
+        } 
+        type operator()(const T& x, const EXPONENT_TYPE& exponent) const { 
+            return SelfType::op(x, exponent);
+        } 
+    };
+
+    template<class T, int64_t EXPONENT>
+    struct PowN { 
+        typedef typename multi_array::meta::PromoteRealType<T,int64_t>::type type;
+        typedef PowN<T,EXPONENT> SelfType;
+
+        static type op(const T& x){ 
+            return std::pow(x, EXPONENT);
+        } 
+        type operator()(const T& x) const { 
+            return SelfType::op(x, EXPONENT);
+        } 
+    };
+
+    template<class T>
+    using Pow2 = PowN<T,2>;
+    template<class T>
+    using Pow3 = PowN<T,3>;
+
+
+
+
+    template<class T>
+    struct Cast{
+        typedef T type;
+
+        template<class U>
+        static type op(U && val){ return static_cast<U>(val); } 
+
+        template<class U>
+        type operator()(U && val) const { return static_cast<U>(val); } 
+    };
+
+
+    // UNARY MATH FUNCTIONS WICH HAVE
+    // ALL THE SAME RESULT TYPE
+    #define GEN_MATH_FUNCTOR(CLASS_NAME, FUNCTION_NAME)\
+    template<class T>\
+    struct CLASS_NAME{\
+        typedef typename meta::PromoteReal<T>::type type;\
+        type operator()(const T& value)const{\
+            return FUNCTION_NAME(value);\
+        }\
+    };
+
+    // Trigonometric functions
+    GEN_MATH_FUNCTOR(Cos,           std::cos);
+    GEN_MATH_FUNCTOR(Sin,           std::sin);
+    GEN_MATH_FUNCTOR(Tan,           std::tan);
+    GEN_MATH_FUNCTOR(Acos,          std::acos);
+    GEN_MATH_FUNCTOR(Asin,          std::asin);
+    GEN_MATH_FUNCTOR(Atan,          std::atan);
+    // Hyperbolic functions
+    GEN_MATH_FUNCTOR(Cosh,           std::cosh);
+    GEN_MATH_FUNCTOR(Sinh,           std::sinh);
+    GEN_MATH_FUNCTOR(Tanh,           std::tanh);
+    GEN_MATH_FUNCTOR(Acosh,          std::acosh);
+    GEN_MATH_FUNCTOR(Asinh,          std::asinh);
+    GEN_MATH_FUNCTOR(Atanh,          std::atanh);
+    // Exponential and logarithmic functions
+    GEN_MATH_FUNCTOR(Exp,       std::exp);
+    GEN_MATH_FUNCTOR(Log,       std::log);
+    GEN_MATH_FUNCTOR(Log10,     std::log10);
+    GEN_MATH_FUNCTOR(Exp2,      std::exp2);
+    //Power functions
+    GEN_MATH_FUNCTOR(Sqrt,      std::sqrt);
+    //GEN_MATH_FUNCTOR(Cqrt,      std::cqrt);
+    //Error and gamma functions
+    GEN_MATH_FUNCTOR(Erf,       std::erf);
+    GEN_MATH_FUNCTOR(Erfc,      std::erfc);
+    GEN_MATH_FUNCTOR(Tgamma,    std::tgamma);
+    GEN_MATH_FUNCTOR(Lgamma,    std::lgamma);
+    //Rounding and remainder functions
+    GEN_MATH_FUNCTOR(Ceol,      std::ceil);
+    GEN_MATH_FUNCTOR(Floor,     std::floor);
+    GEN_MATH_FUNCTOR(Trunc,     std::trunc);
+    GEN_MATH_FUNCTOR(Round,     std::round);
+    GEN_MATH_FUNCTOR(Lround,    std::lround);
+    GEN_MATH_FUNCTOR(Rint,      std::rint);
+    //Other functions
+    GEN_MATH_FUNCTOR(Abs,      std::abs);
+    GEN_MATH_FUNCTOR(Fabs,     std::fabs);
+    #undef GEN_MATH_FUNCTOR
+
+
+
+
+    template<class SCALAR_LIKE, class BINARY_FUNCTOR>
+    struct BindScalarLeft{
+        typedef typename BINARY_FUNCTOR::type type;
+        BindScalarLeft(
+            const SCALAR_LIKE & scalarLike = SCALAR_LIKE(),
+            const BINARY_FUNCTOR & binaryFunctor = BINARY_FUNCTOR()
+        )
+        :   scalarLike_(scalarLike),
+            binaryFunctor_(binaryFunctor){
+        }
+        template<class VALUE>
+        type operator()(VALUE && value)const{
+            return binaryFunctor_(scalarLike_, value);
+        }
+
+        SCALAR_LIKE scalarLike_;
+        BINARY_FUNCTOR binaryFunctor_;
+    };
+
+    template<class SCALAR_LIKE, class BINARY_FUNCTOR>
+    struct BindScalarRight{
+        typedef typename BINARY_FUNCTOR::type type;
+        BindScalarRight(
+            const SCALAR_LIKE & scalarLike = SCALAR_LIKE(),
+            const BINARY_FUNCTOR & binaryFunctor = BINARY_FUNCTOR()
+        )
+        :   scalarLike_(scalarLike),
+            binaryFunctor_(binaryFunctor){
+        }
+        template<class VALUE>
+        type operator()(VALUE && value)const{
+            return binaryFunctor_(value, scalarLike_);
+        }
+
+        SCALAR_LIKE scalarLike_;
+        BINARY_FUNCTOR binaryFunctor_;
+    };
+
+
 
     template< template<class, class> class FUNCTOR>
     struct FunctorGenerator{
@@ -147,7 +276,30 @@ namespace multi_array{
 
 
 
+    template<
+        class OUTER_UNARY_FUNCTOR,
+        class INNER_UNARY_FUNCTOR
+    >
+    struct ChainedUnaryFunctors{
+        ChainedUnaryFunctors(
+            const OUTER_UNARY_FUNCTOR outerUnaryFunctor,
+            const INNER_UNARY_FUNCTOR innerUnaryFunctor
+        )
+        :   outerUnaryFunctor_(outerUnaryFunctor),
+            innerUnaryFunctor_(innerUnaryFunctor){
+        }
+        typedef typename OUTER_UNARY_FUNCTOR::type type;
+        template<class ARG>
+        type operator()(
+            ARG && arg
+        )const{
 
+        }
+        const OUTER_UNARY_FUNCTOR outerUnaryFunctor_;
+        const INNER_UNARY_FUNCTOR innerUnaryFunctor_;
+    };
+
+    
 
 
 

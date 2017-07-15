@@ -7,9 +7,9 @@
 #include <utility>
 
 
-#include "meta.hxx"
-#include "misc.hxx"
-#include "indexing_types.hxx"
+#include "multi_array/meta.hxx"
+#include "multi_array/misc.hxx"
+
 
 
 
@@ -22,13 +22,90 @@ namespace multi_array{
 namespace detail_multi_array{
 
 
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,  class ARG, bool IS_INTEGRAL>
+template<class T>
+struct NewAxisCount
+: public meta::SizeT<0>{
+};
+
+template<std::size_t N>
+struct NewAxisCount<NewAxis<N>>
+: public meta::SizeT<N>{
+};
+
+
+template<class ARG,  class ... ARGS>
+struct CountTotalNeededNewAxisHelper
+{
+    typedef typename meta::RemoveCvAndReference<ARG>::type ProcessedArg;
+    static const std::size_t value = NewAxisCount<ProcessedArg>::value + CountTotalNeededNewAxisHelper<ARGS ... >::value;
+};
+
+template<class ARG>
+struct CountTotalNeededNewAxisHelper<ARG>{
+    typedef typename meta::RemoveCvAndReference<ARG>::type ProcessedArg;
+    static const std::size_t value = NewAxisCount<ProcessedArg>::value;
+};
+
+template<class ... ARGS>
+struct CountTotalNeededNewAxis
+: public meta::SizeT<
+    CountTotalNeededNewAxisHelper<ARGS ... >::value
+>
+{
+};
+
+
+
+template<class T>
+struct IsNewAxisLike
+: public meta::SizeT<0>{
+};
+
+template<std::size_t N>
+struct IsNewAxisLike<NewAxis<N>>
+: public meta::SizeT<1>{
+};
+
+
+template<class ARG,  class ... ARGS>
+struct CountNewAxisLikeArgsHelper
+{
+    typedef typename meta::RemoveCvAndReference<ARG>::type ProcessedArg;
+    static const std::size_t value = IsNewAxisLike<ProcessedArg>::value + CountNewAxisLikeArgsHelper<ARGS ... >::value;
+};
+
+template<class ARG>
+struct CountNewAxisLikeArgsHelper<ARG>{
+    typedef typename meta::RemoveCvAndReference<ARG>::type ProcessedArg;
+    static const std::size_t value = IsNewAxisLike<ProcessedArg>::value;
+};
+
+template<class ... ARGS>
+struct CountNewAxisLikeArgs
+: public meta::SizeT<
+    CountNewAxisLikeArgsHelper<ARGS ... >::value
+>
+{
+};
+
+
+
+
+
+
+
+
+
+
+
+
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX, int N_ARG_TO_COVER_WITH_ELLIPSIS, class ARG, bool IS_INTEGRAL>
 struct ProcessArg;
 
 
 // integral arg
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX, class ARG>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, ARG, true>{
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX, int N_ARG_TO_COVER_WITH_ELLIPSIS, class ARG>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, N_ARG_TO_COVER_WITH_ELLIPSIS, ARG, true>{
 
     template<class _ARG>
     static void op(
@@ -41,8 +118,8 @@ struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, ARG, tru
 };
 
 // range argument
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, Range, false>{
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX, int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, N_ARG_TO_COVER_WITH_ELLIPSIS, Range, false>{
     //template<class RANGE>
     static void op(
         const MARRAY_IN & marrayIn,
@@ -60,8 +137,8 @@ struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, Range, f
 
 
 // strided range argument
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, StridedRange, false>{
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, N_ARG_TO_COVER_WITH_ELLIPSIS, StridedRange, false>{
     static void op(
         const MARRAY_IN & marrayIn,
         MARRAY_OUT & marrayOut,
@@ -83,32 +160,78 @@ struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, StridedR
 
 };
 // all
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, All, false>{
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, All, false>{
     static void op(
         const MARRAY_IN & marrayIn,
         MARRAY_OUT & marrayOut,
-        const All & all
+        const All & 
     ){
         marrayOut.shape_[OUT_AXIS_INDEX] = marrayIn.shape_[IN_AXIS_INDEX];
         marrayOut.strides_[OUT_AXIS_INDEX] = marrayIn.strides_[IN_AXIS_INDEX];
     }
 
 };
-
-// newaxis
-template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, NewAxis, false>{
+// ellipsis
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, Ellipsis, false>{
     static void op(
         const MARRAY_IN & marrayIn,
         MARRAY_OUT & marrayOut,
-        const NewAxis & range
+        const Ellipsis & 
     ){
+        for(auto i=0; i<N_ARG_TO_COVER_WITH_ELLIPSIS; ++i){
+            marrayOut.shape_[OUT_AXIS_INDEX+i] = marrayIn.shape_[IN_AXIS_INDEX+i];
+            marrayOut.strides_[OUT_AXIS_INDEX+i] = marrayIn.strides_[IN_AXIS_INDEX+i];
+        }
+    }
 
+};
+
+
+// newaxis
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, NewAxis<1>, false>{
+    static void op(
+        const MARRAY_IN & marrayIn,
+        MARRAY_OUT & marrayOut,
+        const NewAxis<1> & 
+    ){
         marrayOut.shape_[OUT_AXIS_INDEX] = 1;
         marrayOut.strides_[OUT_AXIS_INDEX] = 0;
     }
+};
 
+// n-newaxis
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS, std::size_t N_NEW_AXIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, NewAxis<N_NEW_AXIS>, false>{
+    static void op(
+        const MARRAY_IN & marrayIn,
+        MARRAY_OUT & marrayOut,
+        const NewAxis<N_NEW_AXIS> &
+    ){
+        for(auto i=0; i<N_NEW_AXIS; ++i){
+            marrayOut.shape_[OUT_AXIS_INDEX + i] = 1;
+            marrayOut.strides_[OUT_AXIS_INDEX + i] = 0;
+        }
+    }
+};
+
+
+template<class ARG, bool IS_INTEGRAL>
+struct InOutAxisIncrement{
+    typedef meta::Int<1> InAxis;
+    typedef meta::Int<1> OutAxis;
+};
+template<class ARG>
+struct InOutAxisIncrement<ARG, true>{
+    typedef meta::Int<1> InAxis;
+    typedef meta::Int<0> OutAxis;
+};
+template<std::size_t N>
+struct InOutAxisIncrement<NewAxis<N>, false>{
+    typedef meta::Int<0> InAxis;
+    typedef meta::Int<N> OutAxis;
 };
 
 
@@ -117,6 +240,7 @@ template<
     class MARRAY_OUT, 
     size_t IN_AXIS_INDEX,
     size_t OUT_AXIS_INDEX,
+    int N_ARG_TO_COVER_WITH_ELLIPSIS,
     class ARG,
     class ... ARGS
 >
@@ -131,7 +255,8 @@ struct MixedArgsImpl{
         // check if the argument is integral
         typedef multi_array::meta::IsIntegralOrIntegralRefeference<ARG> IsIntgralArgType;
 
-        typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, NewAxis> IsNewAaxisArgType;
+        typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, NewAxis<1>> IsNewAxisArgType;
+        typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, Ellipsis> IsEllipsisArgType;
         // handle the current argument
 
         typedef typename std::remove_reference<ARG>::type NoRefArgType;
@@ -142,19 +267,31 @@ struct MixedArgsImpl{
             MARRAY_OUT,
             IN_AXIS_INDEX,
             OUT_AXIS_INDEX,
+            N_ARG_TO_COVER_WITH_ELLIPSIS,
             NoConstNoRefArgType, 
             IsIntgralArgType::value
         >::op(marrayIn, marrayOut, std::forward<ARG>(arg));
         
+
+        typedef InOutAxisIncrement<NoConstNoRefArgType, IsIntgralArgType::value> InOutAxisIncrementType;
+
+        const static int IncrementIn = IsEllipsisArgType::value ? 
+            N_ARG_TO_COVER_WITH_ELLIPSIS : InOutAxisIncrementType::InAxis::value;
+
+        const static int IncrementOut = IsEllipsisArgType::value ? 
+            N_ARG_TO_COVER_WITH_ELLIPSIS : InOutAxisIncrementType::OutAxis::value;
+
+
+
 
         MixedArgsImpl<
             MARRAY_IN, MARRAY_OUT, 
             // if the argument is a newaxis argument
             // we do  not increment the in axis index
             // since the current in axis has not yet been handled
-            IsNewAaxisArgType::value ?  IN_AXIS_INDEX : IN_AXIS_INDEX + 1, 
-            // iff arg is NOT integer we increment
-            IsIntgralArgType::value ?  OUT_AXIS_INDEX : OUT_AXIS_INDEX + 1, 
+            IN_AXIS_INDEX + IncrementIn,
+            OUT_AXIS_INDEX + IncrementOut,
+            N_ARG_TO_COVER_WITH_ELLIPSIS,
             ARGS ... 
         >::op(marrayIn, marrayOut, std::forward<ARGS>(args) ...);
     
@@ -167,6 +304,7 @@ template<
     class MARRAY_OUT, 
     size_t IN_AXIS_INDEX,
     size_t OUT_AXIS_INDEX,
+    int N_ARG_TO_COVER_WITH_ELLIPSIS,
     class ARG
 >
 struct MixedArgsImpl<
@@ -174,6 +312,7 @@ struct MixedArgsImpl<
     MARRAY_OUT,
     IN_AXIS_INDEX,
     OUT_AXIS_INDEX,
+    N_ARG_TO_COVER_WITH_ELLIPSIS,
     ARG 
 >{
     static void op(
@@ -192,6 +331,7 @@ struct MixedArgsImpl<
             MARRAY_OUT,
             IN_AXIS_INDEX,
             OUT_AXIS_INDEX,
+            N_ARG_TO_COVER_WITH_ELLIPSIS,
             NoConstNoRefArgType, 
             IsIntgralArgType::value
         >::op(marrayIn, marrayOut, std::forward<ARG>(arg));    
@@ -201,18 +341,18 @@ struct MixedArgsImpl<
 
 
 
-/**
- * @brief Dispatch the implementation of SmartMultiArray::operator()
- * @details SmartMultiArray::operator() is implemented with variadic
- * template. Depending on the actual types the implementation
- * will differ drastically.
- * This struct is responsible to dispatch the SmartMultiArray::operator()
- * to the appropriate functions.    
- * 
- * @tparam MARRAY Always a SmartMultiArray 
- * @tparam CONST_INSTANCE If SmartMultiArray instance is const this is true.
- * @tparam class ... ARGS The argument types passed to SmartMultiArray::operator()
- */
+
+
+
+
+
+
+
+
+
+
+
+
 template<class MARRAY, bool CONST_INSTANCE, class ... ARGS>
 struct BracketOpDispatcher{
 
@@ -227,22 +367,66 @@ struct BracketOpDispatcher{
     typedef typename MarrayType::DimensionType DimensionType;
 
     typedef std::tuple<ARGS ...> ArgTupleType;
-    const static size_t ArgSize = std::tuple_size<ArgTupleType>::value;
-
+    const static size_t RawArgSize = std::tuple_size<ArgTupleType>::value;
+    const static size_t Dim =  DimensionType::value;
     
+
+    // if there is only a single argument and the single argument
+    // is a scalar we need to pay attention
+    typedef typename std::tuple_element<0, ArgTupleType>::type FirstArgType;
+    const static bool SingleIntegralArg  = meta::IsIntegralOrIntegralRefeference<FirstArgType>::value;
 
 
     // information needed to dispatch...
-    typedef typename meta::CountOccurrencesRelaxed<NewAxis,     ARGS ... >        NumNewAxisArgumentsType;
-    typedef typename meta::CountIntegralArgumetns<ARGS ... >                      NumIntegralArgumentsType;
-    typedef meta::Bool<NumIntegralArgumentsType::value==ArgSize>                  AllIntegralArgumentsType;
+    typedef CountTotalNeededNewAxis<ARGS ... >                     NumNeeededNewAxisType;
+    typedef CountNewAxisLikeArgs<ARGS ... >                        NumNewArgLikeArgsType;
+    typedef meta::CountOccurrencesRelaxed<Ellipsis,    ARGS ... >  NumEllipsisArgsType;
+    typedef meta::CountIntegralArgumetns<ARGS ... >                NumIntegralArgsType;
+    typedef meta::Bool<NumIntegralArgsType::value==RawArgSize>     AllIntegralArgsType;
 
-    static_assert(ArgSize == DimensionType::value  + NumNewAxisArgumentsType::value || ArgSize == 1, "wrong number of arguments in SmartMultiArray::operator()");
+    // shortcuts
+    const static size_t NumNeededNewAxisArgs  = NumNeeededNewAxisType::value;
+    const static size_t NumNewArgLikeArgs  = NumNewArgLikeArgsType::value;
+    const static size_t NumEllipsisArgs  = NumEllipsisArgsType::value;
+    const static size_t NumIntegralArgs = NumIntegralArgsType::value;
+
+    const static size_t RestArgSize = RawArgSize - NumEllipsisArgs - NumNewArgLikeArgs;
+
+    // early sanity check / static asserts
+    static_assert(NumEllipsisArgs<=1, "Only A single Ellipsis argument can be used");
+
+
+    // how many arguments need to be covered
+    // by a potential ellipsis arguments
+    const static int NToConverWithEllipsis = (Dim  - RestArgSize);
+
+    static_assert(NToConverWithEllipsis == 0 || NumEllipsisArgs == 1, "Not enough arguments are passed to operator()");
+
+
+    // if there is NO ellipsis argument
+    // the number of arguments must match exact bu we split this
+    // up into 2 checks to indicate if we have to much or not enough args
+    static_assert(
+        NumEllipsisArgs == 1  || (Dim  - RestArgSize) == 0,
+        "wrong number of arguments arguments are passed to operator()"
+    );
+
+
+    // if there IS an ellipsis argument
+    // the number of arguments must not match exact.
+    // fewer args are allowed but not to many
+    static_assert(
+        NumEllipsisArgs == 0  || (NToConverWithEllipsis>=1),
+        "To many arguments are passed to operator()"
+    );
+    
+
+
 
     typedef meta::SizeT<
-        NumNewAxisArgumentsType::value + 
-        DimensionType::value - 
-        NumIntegralArgumentsType::value 
+        NumNeededNewAxisArgs + 
+        Dim - 
+        NumIntegralArgs
     >   ResultDimensionType;
 
 
@@ -265,7 +449,7 @@ struct BracketOpDispatcher{
 
     struct MixedArgsImplType{
 
-        typedef typename MarrayType:: template RebindDimension<ResultDimensionType::value>:: type type;
+        typedef typename MarrayType:: template RebindDimensionAndIsConst<ResultDimensionType::value, CONST_INSTANCE>:: type type;
 
         static type op(MarrayReferenceType marray, ARGS && ... args){
 
@@ -276,7 +460,8 @@ struct BracketOpDispatcher{
             // might be modified later on
             resultArray.data_ = marray.data_;
             resultArray.smart_handle_ = marray.smart_handle_;
-            MixedArgsImpl<MarrayType, type, 0,0,ARGS ...>::op(marray, resultArray, std::forward<ARGS>(args) ... );
+            MixedArgsImpl<MarrayType, type, 0,0, NToConverWithEllipsis,ARGS ...>::op(
+                marray, resultArray, std::forward<ARGS>(args) ... );
             resultArray.size_ = detail_multi_array::shapeSize(resultArray.shape());
 
             return resultArray;
@@ -296,20 +481,10 @@ struct BracketOpDispatcher{
     // The dispatcher switch
     typedef typename meta::Switch<
 
-        // `ordinary` bracket operator called with only integers
-        meta::Bool<DimensionType::value==ArgSize && AllIntegralArgumentsType::value>,  OnlyScalarImplType,
-
-        // single scalar as argument
-        meta::Bool<ArgSize==1 && AllIntegralArgumentsType::value>,  ImplC,
-
-        // mixed arguments
-        // \TODO refine conditions
-        meta::Bool<true>,  MixedArgsImplType,
-
-
-        // fallback (error)
-        meta::TrueCase, ImplC
-
+        meta::Bool<Dim==RawArgSize && AllIntegralArgsType::value>,
+            OnlyScalarImplType,
+        meta::Bool<true>,   
+            MixedArgsImplType
     >::type type;
 
 

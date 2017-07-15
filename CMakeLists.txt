@@ -19,6 +19,8 @@ SET(BUILD_TESTS ON CACHE BOOL "")
 option(BUILD_TESTS    ON)
 
 
+SET(BUILD_BENCHMARK ON CACHE BOOL "")
+option(BUILD_BENCHMARK    ON)
 
 
 #-------------------------------------------------------------------------------------------------------------------

@@ -30,6 +30,10 @@ namespace meta{
     template<int8_t VAL>
     struct Int8T : std::integral_constant<int8_t, VAL>{
     };
+    template<int8_t VAL>
+    struct Int: std::integral_constant<int, VAL>{
+    };
+
     template<bool VAL>
     struct Bool : std::integral_constant<bool, VAL>{
     };
@@ -98,11 +102,11 @@ namespace meta{
 
   
 
-    template<class COND, class TYPE, class ... ARGS>
+    template<class COND, class ARG, class ... ARGS>
     struct  LazyEvalIfSwitch : public EvalIf<
         typename COND::type, 
-        TYPE,
-        LazyEvalIfSwitch<ARGS ... >
+        ARG,
+        typename LazyEvalIfSwitch<ARGS ... >::type
     >
     {
 
