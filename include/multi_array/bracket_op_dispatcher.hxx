@@ -220,18 +220,18 @@ struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_
 
 template<class ARG, bool IS_INTEGRAL>
 struct InOutAxisIncrement{
-    typedef meta::SizeT<1> InAxis;
-    typedef meta::SizeT<1> OutAxis;
+    typedef meta::Int<1> InAxis;
+    typedef meta::Int<1> OutAxis;
 };
 template<class ARG>
 struct InOutAxisIncrement<ARG, true>{
-    typedef meta::SizeT<1> InAxis;
-    typedef meta::SizeT<0> OutAxis;
+    typedef meta::Int<1> InAxis;
+    typedef meta::Int<0> OutAxis;
 };
 template<std::size_t N>
 struct InOutAxisIncrement<NewAxis<N>, false>{
-    typedef meta::SizeT<0> InAxis;
-    typedef meta::SizeT<N> OutAxis;
+    typedef meta::Int<0> InAxis;
+    typedef meta::Int<N> OutAxis;
 };
 
 
