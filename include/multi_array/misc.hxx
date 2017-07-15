@@ -151,7 +151,7 @@ namespace multi_array{
             const Shape<DIM> & shapeA,
             const Shape<DIM> & shapeB
         )
-        :   std::runtime_error(){
+        :   std::runtime_error(std::string("TODO")){
         }
         ShapesNotBroadcastableException(const std::string & msg = std::string())
         :   std::runtime_error(msg.c_str()){
