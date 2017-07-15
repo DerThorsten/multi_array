@@ -1,3 +1,5 @@
 add_subdirectory(tests)
-add_subdirectory(benchmark)
 
+if(BUILD_BENCHMARK)
+add_subdirectory(benchmark)
+endif()
