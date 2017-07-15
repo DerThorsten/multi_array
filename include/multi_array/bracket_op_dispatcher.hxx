@@ -273,14 +273,14 @@ struct MixedArgsImpl{
         >::op(marrayIn, marrayOut, std::forward<ARG>(arg));
         
 
+        typedef InOutAxisIncrement<NoConstNoRefArgType, IsIntgralArgType::value> InOutAxisIncrementType;
+
         const static int IncrementIn = IsEllipsisArgType::value ? 
-            N_ARG_TO_COVER_WITH_ELLIPSIS : 1;
+            N_ARG_TO_COVER_WITH_ELLIPSIS : InOutAxisIncrementType::InAxis::value;
 
         const static int IncrementOut = IsEllipsisArgType::value ? 
-            N_ARG_TO_COVER_WITH_ELLIPSIS : 1;
+            N_ARG_TO_COVER_WITH_ELLIPSIS : InOutAxisIncrementType::OutAxis::value;
 
-
-        typedef InOutAxisIncrement<NoConstNoRefArgType, IsIntgralArgType::value> InOutAxisIncrementType;
 
 
 
@@ -289,8 +289,8 @@ struct MixedArgsImpl{
             // if the argument is a newaxis argument
             // we do  not increment the in axis index
             // since the current in axis has not yet been handled
-            IN_AXIS_INDEX + InOutAxisIncrementType::InAxis::value, 
-            OUT_AXIS_INDEX + InOutAxisIncrementType::OutAxis::value,
+            IN_AXIS_INDEX + IncrementIn,
+            OUT_AXIS_INDEX + IncrementOut,
             N_ARG_TO_COVER_WITH_ELLIPSIS,
             ARGS ... 
         >::op(marrayIn, marrayOut, std::forward<ARGS>(args) ...);

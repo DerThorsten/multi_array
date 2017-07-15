@@ -38,11 +38,12 @@ int main(){
         
 
 
-        /// cc = b[None,None,None,...]
-        //uto cc = b(ma::newAxis(), ma::newAxis(),ma::newAxis(), ma::ellipsis());
-        /// cc = b[None,None,None,...]
-        //uto cd = b(ma::NewAxis<3>(),ma::ellipsis());
-        ///auto cd = b(ma::ellipsis());
+        // cc = b[None,None,None,...]
+        auto cc = b(ma::newAxis(), ma::newAxis(),ma::newAxis(), ma::ellipsis());
+        // cc = b[None,None,None,...]
+        auto cd = b(ma::NewAxis<3>(),ma::ellipsis());
+        // cc = b[...]
+        auto ce = b(ma::ellipsis());
 
          
      }
