@@ -88,7 +88,7 @@ class SmartMultiArray
     template<class MARRAY, bool CONST_INSTANCE, class ... Args>
     friend class detail_multi_array::BracketOpDispatcher;
 
-    template<class MARRAY_IN, class MARRAY_OUT, std::size_t IN_AXIS_INDEX, std::size_t OUT_AXIS_INDEX,  class ARG, bool IS_INTEGRAL>
+    template<class MARRAY_IN, class MARRAY_OUT, std::size_t IN_AXIS_INDEX, std::size_t OUT_AXIS_INDEX, int N_ARG_TO_COVER_WITH_ELLIPSIS, class ARG, bool IS_INTEGRAL>
     friend struct detail_multi_array::ProcessArg;
 
     template<class _T, std::size_t _DIM, bool _IS_CONST>
