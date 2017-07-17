@@ -173,7 +173,6 @@ namespace detail_for_each_offset{
         }
     };
 
-
     template<>
     struct ForEachOffsetImpl<1, uint8_t(Order::C_ORDER) >{
         template<class F>
@@ -245,7 +244,6 @@ namespace detail_for_each_offset{
                 f(navigator.offsetA(),navigator.offsetB());
             }
         }
-
     };
 
     template<>

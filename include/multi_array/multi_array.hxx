@@ -33,6 +33,23 @@
 namespace multi_array{
 
 
+
+
+class CannotAssginScalarLikeToEmptyArrayException: public std::runtime_error{
+public:
+
+    CannotAssginScalarLikeToEmptyArrayException(const std::string & msg = std::string())
+    :   std::runtime_error(msg.c_str()){
+    }
+};
+
+
+
+
+
+
+
+
 // forward declarations to expression
 // template classes:
 // they are just for making operations
@@ -231,13 +248,8 @@ public:
     SmartMultiArray(const ShapeType & shape);
     // from shape with c-order and default value
     SmartMultiArray(const ShapeType & shape, const T &);
-    // from other array <= NO new alloc, just a ref
-    SmartMultiArray(const SmartMultiArray & other);
-    // from other array with almost same type
-    SmartMultiArray(const SmartMultiArray<T, DIM, !IS_CONST> & );
-    // from other array with different type
-    template<class _T, bool _IS_CONST>
-    SmartMultiArray(const SmartMultiArray<_T,DIM, _IS_CONST> & );
+
+     
     // from a view expression
     template<class E, class TE>
     SmartMultiArray(const ViewExpression<DIM, E, TE> & );
@@ -263,15 +275,17 @@ public:
     //////////////////////////////////////////////////
     // assignment operators
     //////////////////////////////////////////////////
+ 
 
-    SmartMultiArray & operator= ( const SmartMultiArray & );
-    SmartMultiArray & operator= ( const SmartMultiArray<T,DIM,!IS_CONST> &  );
-    template<class _T, bool _IS_CONST>
-    SmartMultiArray & operator= ( const SmartMultiArray<_T,DIM,_IS_CONST> &  );
-
-    // assign from fancy expression =)
+    // assign from expression
     template<class E, class U>
     SmartMultiArray & operator= ( const ViewExpression<DIM, E, U> & );
+
+    //assign from scalars / scalar likes
+    template< class U, typename std::enable_if<std::is_arithmetic<U>::value || std::is_same<U,T>::value,int>::type = 0>
+    SmartMultiArray & operator= ( const U & scalarLike);
+
+
 
     //////////////////////////////////////////////////
     // simple queries
@@ -394,15 +408,18 @@ public:
 
 
     // helper to assign from another array
-    template<class _T, bool _IS_CONST, class F>
-    void operate(const SmartMultiArray<_T, DIM, _IS_CONST> &, F && f);
-
-
     template<class E, class U, class F>
     void operate(const ViewExpression<DIM, E, U> &, F && f);
 
 
+
+
 private:
+
+
+
+
+
     template<class FUNCTOR>
     void forEach1DArrayAlongAxis(const uint16_t axis, FUNCTOR && functor);
     template<class FUNCTOR>
@@ -431,6 +448,37 @@ private:
 
     // get the last element in the array (wrt. the strides)
     uint64_t lastValidMemOffset()const;
+
+
+
+    // dispatching between expressions and actual arrays
+    template<bool _IS_CONST>
+    void copyConstructorHelper(const SmartMultiArray<T, DIM,  _IS_CONST> & rhs);
+    template<class _CATCH_THE_REST_TEMPLATE>
+    void copyConstructorHelper(const _CATCH_THE_REST_TEMPLATE & rhs);
+    template<class E, class U>
+    void copyConstructorHelperExpression( const ViewExpression<DIM, E, U> & );
+
+
+    // dispatching between expressions and actual arrays
+    SmartMultiArray & assigmentOperatorHelper( const SmartMultiArray & rhs);
+    template<class _T, bool _IS_CONST>
+    SmartMultiArray & assigmentOperatorHelper( const SmartMultiArray<_T,DIM,_IS_CONST> &  rhs);
+    template<class _CATCH_THE_REST_TEMPLATE>
+    SmartMultiArray & assigmentOperatorHelper( const _CATCH_THE_REST_TEMPLATE & rhs );
+    template<class E, class U>
+    SmartMultiArray & assigmentOperatorHelperExpression( const ViewExpression<DIM, E, U> & );
+
+
+    // dispatching between expressions and actual arrays
+    template<class _T, bool _IS_CONST, class F>
+    void operateHelper(const SmartMultiArray<_T, DIM, _IS_CONST> &, F && f);
+    template<class _CATCH_THE_REST_TEMPLATE, class F>
+    void operateHelper(const _CATCH_THE_REST_TEMPLATE &, F && f);
+    template<class E, class U, class F>
+    void operateHelperExpression(const ViewExpression<DIM, E, U> &, F && f);
+
+
     
     // helper to assign from an expression as    ((a+b)*3 +d)
     template<class E, class U>
@@ -441,11 +489,6 @@ private:
     void assignFromOther(const SmartMultiArray<_T, DIM, _IS_CONST> &);
 
 
-
-    template<bool _IS_CONST>
-    void expressionCopyConstructorHelper(const SmartMultiArray<T, DIM,  _IS_CONST> & rhs);
-    template<class _CATCH_THE_REST_TEMPLATE>
-    void expressionCopyConstructorHelper(const _CATCH_THE_REST_TEMPLATE & rhs);
 
 
     /////////////////////////////////////////
@@ -500,61 +543,27 @@ SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
     strides_(detail_multi_array::cOrderStrides(shape)),
     size_(detail_multi_array::shapeSize(shape)),
     data_(new T[size_]),
-    smart_handle_(data_, typename SharedHandleType::AllocNewTag()){ 
+    smart_handle_(data_, typename SharedHandleType::AllocNewTag())
+{ 
     std::fill(data_, data_ + this->size(), initValue);
 }
 
 
-template<class T, std::size_t DIM, bool IS_CONST>
-inline 
-SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
-    const  SmartMultiArray & other
-)
-:   BaseType(),
-    shape_(other.shape_),
-    strides_(other.strides_),
-    size_(other.size_),
-    data_(other.data_),
-    smart_handle_(other.smart_handle_,  typename SharedHandleType::CopyHandleTag())
-{
-
-}
-
-
 
 template<class T, std::size_t DIM, bool IS_CONST>
-inline 
-SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
-    const  SmartMultiArray<T,DIM, !IS_CONST> & other
-)
-:   BaseType(),
-    shape_(other.shape_),
-    strides_(other.strides_),
-    size_(other.size_),
-    data_(other.data_),
-    smart_handle_(other.smart_handle_,  typename SharedHandleType::CopyHandleTag())
-{
-
-}
-
-
-template<class T, std::size_t DIM, bool IS_CONST>
-template<class _T, bool _IS_CONST>
+template<class E, class TE>
 inline
 SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
-    const SmartMultiArray<_T,DIM, _IS_CONST> & other
-)
-:   BaseType(),
-    shape_(other.shape_),
-    strides_(detail_multi_array::cOrderStrides(other.shape_)),
-    size_(other.size_),
-    data_(new T[size_]),
-    smart_handle_(data_, typename SharedHandleType::AllocNewTag())
+    const ViewExpression<DIM, E, TE> & rhs
+):  BaseType(),
+    shape_(),
+    strides_(),
+    size_(0),
+    data_(nullptr),
+    smart_handle_()
 {
-
-    *this = other;
+    this->copyConstructorHelper(static_cast<const E &>(rhs));
 }
-
 
 // from existing mem
 template<class T, std::size_t DIM, bool IS_CONST>
@@ -593,28 +602,10 @@ inline SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
 }
 
 
-
-
-template<class T, std::size_t DIM, bool IS_CONST>
-template<class E, class TE>
-inline
-SmartMultiArray<T, DIM, IS_CONST>::SmartMultiArray(
-    const ViewExpression<DIM, E, TE> & rhs
-):  BaseType(),
-    shape_(),
-    strides_(),
-    size_(0),
-    data_(nullptr),
-    smart_handle_()
-{
-    //std::cout<<"Copy Constructor from View Exp\n";
-    this->expressionCopyConstructorHelper(static_cast<const E &>(rhs));
-}
-
-
 template<class T, std::size_t DIM, bool IS_CONST>
 template<bool _IS_CONST>
-void SmartMultiArray<T, DIM, IS_CONST>::expressionCopyConstructorHelper(
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::copyConstructorHelper(
     const SmartMultiArray<T, DIM,  _IS_CONST> & rhs
 ){
     shape_ = rhs.shape_;
@@ -627,52 +618,147 @@ void SmartMultiArray<T, DIM, IS_CONST>::expressionCopyConstructorHelper(
 
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class _CATCH_THE_REST_TEMPLATE>
-void SmartMultiArray<T, DIM, IS_CONST>::expressionCopyConstructorHelper(
+inline void
+SmartMultiArray<T, DIM, IS_CONST>::copyConstructorHelper(
     const _CATCH_THE_REST_TEMPLATE & rhs
+){
+    this->copyConstructorHelperExpression(rhs);
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::copyConstructorHelperExpression( 
+    const ViewExpression<DIM, E, U> & rhs
 ){
     *this = rhs;
 }
 
 
+// different type
 
-
-
-
-
-
-// same type
 template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U>
+inline auto 
+SmartMultiArray<T, DIM, IS_CONST>::operator=( 
+    const ViewExpression<DIM, E, U> & e
+) -> SmartMultiArray & {
+    // cast into the concrete expression
+    // and call assignment operators with that
+    return this->assigmentOperatorHelper(static_cast<const E&>(e));
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template< class U, typename std::enable_if<std::is_arithmetic<U>::value || std::is_same<U,T>::value,int>::type >
 inline auto 
 SmartMultiArray<T, DIM, IS_CONST>::operator= ( 
-    const SmartMultiArray & other
-) -> SmartMultiArray &{
+    const U & scalarLike
+) -> SmartMultiArray & {
 
-    if(this!=&other){
-        this->assignFromOther(other);
+    if(this->empty()){
+        throw CannotAssginScalarLikeToEmptyArrayException();
+    }
+
+    if(this->contiguous()){
+        std::fill(this->data_, this->data_ + this->size_, scalarLike);
+    }
+    else{
+        this->forEach([&](reference val){
+            val = scalarLike;
+        });
     }
     return *this;
 }
 
-// same type except const-ness
+
+
+
 template<class T, std::size_t DIM, bool IS_CONST>
 inline auto
-SmartMultiArray<T, DIM, IS_CONST>::operator=(
- const SmartMultiArray<T,DIM, !IS_CONST > & other
-)->SmartMultiArray & {
-
-    this->assignFromOther(other);
-
+SmartMultiArray<T, DIM, IS_CONST>::assigmentOperatorHelper(
+    const SmartMultiArray & rhs
+)-> SmartMultiArray &{
+    if(this!=&rhs){
+        this->assignFromOther(rhs);
+    }
+    return *this;
 }
 
-// different type
+
+
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class _T, bool _IS_CONST>
 inline auto
-SmartMultiArray<T, DIM, IS_CONST>::operator=(
- const SmartMultiArray<_T,DIM,_IS_CONST> &  other
-)->SmartMultiArray & {
-    this->assignFromOther(other);
+SmartMultiArray<T, DIM, IS_CONST>::assigmentOperatorHelper(
+    const SmartMultiArray<_T,DIM,_IS_CONST> &  rhs
+)-> SmartMultiArray &{
+    this->assignFromOther(rhs);
+    return *this;
 }
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class _CATCH_THE_REST_TEMPLATE>
+inline auto
+SmartMultiArray<T, DIM, IS_CONST>::assigmentOperatorHelper(
+    const _CATCH_THE_REST_TEMPLATE & rhs 
+)-> SmartMultiArray &{
+    return this->assigmentOperatorHelperExpression(rhs);
+}
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U>
+inline auto 
+SmartMultiArray<T, DIM, IS_CONST>::assigmentOperatorHelperExpression( 
+    const ViewExpression<DIM, E, U> & e
+) -> SmartMultiArray & {
+
+
+    typedef typename E::ViewExpressionMetaType                   ViewExpressionMetaType;
+    typedef typename ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
+    typedef typename ViewExpressionMetaType::IsShapelessType     IsShapelessType;
+
+    const static bool hasShape = !IsShapelessType::value;
+
+
+    bool wasEmpty = false;
+    // TODO check if empty
+    if(this->empty()){
+
+        //const auto hasShape = 
+        MULTI_ARRAY_CHECK(hasShape, 
+            "Cannot assign Shapeless expression to empty array");
+
+        const auto eShape = e.makeShape();
+
+        wasEmpty = true;
+        // make new array
+        shape_ = eShape;
+        strides_ = detail_multi_array::cOrderStrides(shape_);
+        size_ = detail_multi_array::shapeSize(shape_);
+        data_ = new T[size_];
+        smart_handle_ = SharedHandleType(data_, typename SharedHandleType::AllocNewTag());
+    }
+    const auto isOverlapping =  !wasEmpty && e.overlaps(*this);
+    if(isOverlapping){
+        // alloc a new array (TODO think about axis order)
+        SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
+        tmp.assignFromNonOverlappingExpression(e);
+        // assign tmp to this
+        *this = tmp;
+    }
+    else{
+        this->assignFromNonOverlappingExpression(e);
+    }
+
+
+    return *this;
+}
+
+
+
+
+
+
 
 
 template<class T, std::size_t DIM, bool IS_CONST>
@@ -738,11 +824,133 @@ SmartMultiArray<T, DIM, IS_CONST>::assignFromOther(
     }
 }
 
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression ( 
+    const ViewExpression<DIM, E, U> & e
+){
+
+    typedef E ExpressionType;
+    typedef typename ExpressionType::ViewExpressionMetaType ViewExpressionMetaType;
+    typedef typename ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
+    const static bool needsCoordinate = NeedsCoordinateType::value;
+    typedef typename ExpressionType::ExpressionPseudoIterator ExpressionPseudoIterator;
+
+    // check the expression
+    // is homogeneous wrt the strides
+    if(e.matchingStrides()){
+        // now we can check 
+        // if the array is also
+        // matching the expressions strides
+        if(e.matchingStrides(this->strides())){
+
+            // optimal operation in case
+            // of contiguous array
+            if(this->contiguous() && !needsCoordinate){
+                //the array is dense this means withe can use the 
+                // ``unsafeAccess`` access  of the expression
+                // which is just linear memory access
+                for(uint64_t i=0; i<this->size(); ++i){
+                    this->unsafeAccess(i) = e.unsafeAccess(i); 
+                }
+                return;
+            }
+            else{
+                // we can loop over all memory
+                // offsets.
+                // since the expression and
+                // array have the same strides the offset
+                // is the same for e and the array
+                    
+                // currently we assume c order
+
+                if(!needsCoordinate){
+                    forEachOffset(shape_, strides_,
+
+                        [&](const uint64_t offset){
+                            this->unsafeAccess(offset) = e.unsafeAccess(offset); 
+                        }
+
+                    );
+                }
+                else{
+                    forEachOffsetAndCoordinate(shape_, strides_,
+
+                        [&](
+                            const uint64_t offset,
+                            const Coordinate<DIM> & coordinate
+                        ){
+                            this->unsafeAccess(offset) = e.unsafeAccess(offset, coordinate); 
+                        }
+
+                    );
+                }
+                return;
+            }
+        }
+        // fall trough
+    }
+    
+    // fall trough
+
+    // TODO there
+    // is some speedup possible
+    // if the array is contiguous
+
+    ExpressionPseudoIterator eIter(e);
+
+    // general case
+    // c-order 
+    uint64_t thisOffset = 0;
+    Coordinate<DIM> coordinate(0);
+
+    for(;;){
+        data_[thisOffset] = *eIter;
+        for(int j=DIM-1; j>=0; --j) {
+            if(coordinate[j]+1 == shape_[j]) {
+                if(j == 0) {
+                    return;
+                }
+                else {
+                    thisOffset -= coordinate[j] * strides_[j];
+                    eIter.resetCoordinate(j);
+                    coordinate[j] = 0;
+                }
+            }
+            else {
+                thisOffset += strides_[j];
+                eIter.incrementCoordinate(j);
+                ++coordinate[j];
+                break;
+            }      
+        }
+    }
+    return;
+    
+}
+
+
+
+
+
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class E, class U, class F>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::operate ( 
+    const ViewExpression<DIM, E, U> & e,
+    F && f
+){
+    this->operateHelper(static_cast<const E &>(e),std::forward<F>(f));
+}
+
+
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class _T, bool _IS_CONST, class F>
-void 
-SmartMultiArray<T, DIM, IS_CONST>::operate(
-    const SmartMultiArray<_T, DIM, _IS_CONST> & other,
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::operateHelper(
+    const SmartMultiArray<_T, DIM, _IS_CONST> &  other,
     F && f
 ){
 
@@ -755,6 +963,7 @@ SmartMultiArray<T, DIM, IS_CONST>::operate(
         data_ = new T[size_];
         smart_handle_ = SharedHandleType(data_, typename SharedHandleType::AllocNewTag());
     }
+
     else{
         if(shape_ != other.shape_){
             // \TODO  make error display the shapes
@@ -802,12 +1011,18 @@ SmartMultiArray<T, DIM, IS_CONST>::operate(
     }
 }
 
+template<class T, std::size_t DIM, bool IS_CONST>
+template<class _CATCH_THE_REST_TEMPLATE, class F>
+inline void 
+SmartMultiArray<T, DIM, IS_CONST>::operateHelper(const _CATCH_THE_REST_TEMPLATE & rhs, F && f){
+    this->operateHelperExpression(rhs, std::forward<F>(f));
+}
 
 template<class T, std::size_t DIM, bool IS_CONST>
 template<class E, class U, class F>
 inline void 
-SmartMultiArray<T, DIM, IS_CONST>::operate ( 
-    const ViewExpression<DIM, E, U> & e,
+SmartMultiArray<T, DIM, IS_CONST>::operateHelperExpression(
+    const ViewExpression<DIM, E, U> & e, 
     F && f
 ){
 
@@ -847,7 +1062,7 @@ SmartMultiArray<T, DIM, IS_CONST>::operate (
             if(e.matchingStrides(this->strides())){
 
                 // optimal operation in case
-                // of dense array
+                // of contiguous array
                 if(this->contiguous() && !eNeedsCoordinate){
                     //the array is dense this means withe can use the 
                     // ``unsafeAccess`` access  of the expression
@@ -925,159 +1140,6 @@ SmartMultiArray<T, DIM, IS_CONST>::operate (
     
 }
 
-template<class T, std::size_t DIM, bool IS_CONST>
-template<class E, class U>
-inline auto 
-SmartMultiArray<T, DIM, IS_CONST>::operator= ( 
-    const ViewExpression<DIM, E, U> & e
-) -> SmartMultiArray & {
-
-    typedef typename E::ViewExpressionMetaType                   ViewExpressionMetaType;
-    typedef typename ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
-    typedef typename ViewExpressionMetaType::IsShapelessType     IsShapelessType;
-
-    const static bool hasShape = !IsShapelessType::value;
-
-
-    bool wasEmpty = false;
-    // TODO check if empty
-    if(this->empty()){
-
-        //const auto hasShape = 
-        MULTI_ARRAY_CHECK(hasShape, 
-            "Cannot assign Shapeless expression to empty array");
-
-        const auto eShape = e.makeShape();
-
-        wasEmpty = true;
-        // make new array
-        shape_ = eShape;
-        strides_ = detail_multi_array::cOrderStrides(shape_);
-        size_ = detail_multi_array::shapeSize(shape_);
-        data_ = new T[size_];
-        smart_handle_ = SharedHandleType(data_, typename SharedHandleType::AllocNewTag());
-    }
-    const auto isOverlapping =  !wasEmpty && e.overlaps(*this);
-    if(isOverlapping){
-        // alloc a new array (TODO think about axis order)
-        SmartMultiArray<T,DIM,IS_CONST> tmp(this->shape());
-        tmp.assignFromNonOverlappingExpression(e);
-        // assign tmp to this
-        *this = tmp;
-    }
-    else{
-        this->assignFromNonOverlappingExpression(e);
-    }
-
-
-    return *this;
-}
-
-template<class T, std::size_t DIM, bool IS_CONST>
-template<class E, class U>
-inline void 
-SmartMultiArray<T, DIM, IS_CONST>::assignFromNonOverlappingExpression ( 
-    const ViewExpression<DIM, E, U> & e
-){
-
-    typedef E ExpressionType;
-    typedef typename ExpressionType::ViewExpressionMetaType ViewExpressionMetaType;
-    typedef typename ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
-    const static bool needsCoordinate = NeedsCoordinateType::value;
-    typedef typename ExpressionType::ExpressionPseudoIterator ExpressionPseudoIterator;
-
-    // check the expression
-    // is homogeneous wrt the strides
-    if(e.matchingStrides()){
-        // now we can check 
-        // if the array is also
-        // matching the expressions strides
-        if(e.matchingStrides(this->strides())){
-
-            // optimal operation in case
-            // of dense array
-            if(this->contiguous() && !needsCoordinate){
-                //the array is dense this means withe can use the 
-                // ``unsafeAccess`` access  of the expression
-                // which is just linear memory access
-                for(uint64_t i=0; i<this->size(); ++i){
-                    this->unsafeAccess(i) = e.unsafeAccess(i); 
-                }
-                return;
-            }
-            else{
-                // we can loop over all memory
-                // offsets.
-                // since the expression and
-                // array have the same strides the offset
-                // is the same for e and the array
-                    
-                // currently we assume c order
-
-                if(!needsCoordinate){
-                    forEachOffset(shape_, strides_,
-
-                        [&](const uint64_t offset){
-                            this->unsafeAccess(offset) = e.unsafeAccess(offset); 
-                        }
-
-                    );
-                }
-                else{
-                    forEachOffsetAndCoordinate(shape_, strides_,
-
-                        [&](
-                            const uint64_t offset,
-                            const Coordinate<DIM> & coordinate
-                        ){
-                            this->unsafeAccess(offset) = e.unsafeAccess(offset, coordinate); 
-                        }
-
-                    );
-                }
-                return;
-            }
-        }
-        // fall trough
-    }
-    
-    // fall trough
-
-    // TODO there
-    // is some speedup possible
-    // if the array is dense
-
-    ExpressionPseudoIterator eIter(e);
-
-    // general case
-    // c-order 
-    uint64_t thisOffset = 0;
-    Coordinate<DIM> coordinate(0);
-
-    for(;;){
-        data_[thisOffset] = *eIter;
-        for(int j=DIM-1; j>=0; --j) {
-            if(coordinate[j]+1 == shape_[j]) {
-                if(j == 0) {
-                    return;
-                }
-                else {
-                    thisOffset -= coordinate[j] * strides_[j];
-                    eIter.resetCoordinate(j);
-                    coordinate[j] = 0;
-                }
-            }
-            else {
-                thisOffset += strides_[j];
-                eIter.incrementCoordinate(j);
-                ++coordinate[j];
-                break;
-            }      
-        }
-    }
-    return;
-    
-}
 
 
 template<class T, std::size_t DIM, bool IS_CONST>

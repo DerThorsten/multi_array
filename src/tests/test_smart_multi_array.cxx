@@ -693,4 +693,61 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::accumulate"){
     }
 }
 
+TEST_CASE("[SmartMultiArray] SmartMultiArray::operator="){
+    
+    namespace ma = multi_array;
+
+    SUBCASE("assign from scalars"){
+
+
+        SUBCASE("1D"){
+
+            SUBCASE("matching type"){
+                auto a  = ma::arange(0,4);
+                REQUIRE(a.contiguous());
+                REQUIRE_EQ(a.size(),4);
+
+                a = int(2);
+                REQUIRE_EQ(a(0),2);
+                REQUIRE_EQ(a(1),2);
+                REQUIRE_EQ(a(2),2);
+                REQUIRE_EQ(a(3),2);
+            }
+            SUBCASE("not matching type"){
+                auto a  = ma::arange(0,4);
+                a = float(2);
+                REQUIRE_EQ(a(0),2);
+                REQUIRE_EQ(a(1),2);
+                REQUIRE_EQ(a(2),2);
+                REQUIRE_EQ(a(3),2);
+            }
+        }
+        SUBCASE("2D not dense"){
+
+            SUBCASE("allmost matching type"){
+                auto a  = ma::ones<float>(4,4)(ma::range(0,4,2),ma::range(0,4,2));
+                REQUIRE_FALSE(a.contiguous());
+                REQUIRE_EQ(a.size(),4);
+
+                a = uint8_t(4);
+                REQUIRE_EQ(a(0,0),4);
+                REQUIRE_EQ(a(0,1),4);
+                REQUIRE_EQ(a(1,0),4);
+                REQUIRE_EQ(a(1,1),4);
+            }
+            SUBCASE("not matching type"){
+                auto a  = ma::ones<float>(4,4)(ma::range(0,4,2),ma::range(0,4,2));
+                REQUIRE_FALSE(a.contiguous());
+                REQUIRE_EQ(a.size(),4);
+
+                a = uint8_t(3);
+                REQUIRE_EQ(a(0,0),3);
+                REQUIRE_EQ(a(0,1),3);
+                REQUIRE_EQ(a(1,0),3);
+                REQUIRE_EQ(a(1,1),3);
+            }
+        }
+    }
+}
+
 TEST_SUITE_END();

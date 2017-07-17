@@ -168,7 +168,7 @@ namespace multi_array{
         for(auto d=0; d<DIM; ++d){
             const auto sA = shapeA[d];
             const auto sB = shapeB[d];
-            if(sA!=1 && sB[d]!=1 && sA!=sB)
+            if(sA!=1 && sB!=1 && sA!=sB)
                 return false;
         }
         return true;

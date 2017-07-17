@@ -11,7 +11,7 @@ if(BUILD_TESTS)
         PREFIX ${CMAKE_BINARY_DIR}/external_projects/doctest
         GIT_REPOSITORY https://github.com/onqtam/doctest.git
         TIMEOUT 10
-        UPDATE_COMMAND ${GIT_EXECUTABLE} pull
+        #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""

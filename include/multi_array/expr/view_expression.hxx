@@ -4,6 +4,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <exception>
 
 #include "multi_array/meta/promote_type.hxx"
 #include "multi_array/meta/promote_real.hxx"
@@ -20,6 +21,25 @@
 //#include "multi_array/expr/quaternary_expression.hxx"
 
 namespace multi_array{
+
+
+
+
+class CannotUseEmptyArrayInExpressionException: public std::runtime_error{
+public:
+
+    CannotUseEmptyArrayInExpressionException(const std::string & msg = std::string())
+    :   std::runtime_error(msg.c_str()){
+    }
+};
+
+
+
+
+
+
+
+
 
 template<bool NEEDS_COORDINATE, bool IS_SHAPELESS>
 struct ViewExpressionMeta{
@@ -102,6 +122,10 @@ public:
         return static_cast<const E&>(*this).shape(j); 
     }
 
+    bool empty() const{ 
+        return static_cast<const E&>(*this).empty(); 
+    }
+
     Shape<DIM> makeShape()const{
         Shape<DIM> ret;
         for(auto d=0; d<DIM; ++d){
@@ -136,9 +160,7 @@ public:
     bool overlaps(const VIEW & v) const{ 
         return static_cast<const E&>(*this).overlaps(v); 
     }
-    const bool dense() const{
-        return static_cast<const E&>(*this).dense(); 
-    }
+    
 
     // cast operator to convert to child expression ref
     operator E&(){
@@ -181,6 +203,9 @@ public:
         return false;
     }
 
+    bool empty() const{ 
+        return false;
+    }
     
     const size_t shape(const size_t j) const{
         MULTI_ARRAY_CHECK(false,"has no shape");
@@ -264,29 +289,25 @@ public:
     typedef ViewExpression<DIM, UnaryViewExpression<DIM, E, T, UNARY_FUNCTOR>,
         value_type> base;
 
-    UnaryViewExpression(
-        const ViewExpression<DIM, E, T>& e
-    )
-    :   base(),
-        e_(e), // cast!
-        unaryFunctor_(UNARY_FUNCTOR())
-    {
 
-    }
     UnaryViewExpression(
         const ViewExpression<DIM, E, T>& e,
-        const UNARY_FUNCTOR & functor
+        const UNARY_FUNCTOR & functor = UNARY_FUNCTOR()
     )
     :   base(),
         e_(e), // cast!
-        unaryFunctor_(functor)
+        unaryFunctor_(functor),
+        matchingStrides_(e.matchingStrides())
     {
-
+        if(e_.empty()){
+            throw CannotUseEmptyArrayInExpressionException();
+        }
     }
     UnaryViewExpression(const UnaryViewExpression & other)
     :   base(),   
         e_(other.e_),
-        unaryFunctor_(other.unaryFunctor_){
+        unaryFunctor_(other.unaryFunctor_),
+        matchingStrides_(other.matchingStrides_){
     }
 
     UnaryFunctor  unaryFunctor()const{
@@ -299,7 +320,11 @@ public:
     bool hasStrides() const{ 
         return e_.hasStrides();
     }
-
+    // we explicitly check in the constructor that
+    // e_ is non empty
+    bool empty() const{ 
+        return false;
+    }
 
     const size_t shape(const size_t j) const{
         return e_.shape(j); 
@@ -334,7 +359,7 @@ public:
         }
     }
     bool matchingStrides()const{
-        return true;
+        return matchingStrides_;
     }
 
     // only valid if matchin strides
@@ -347,27 +372,6 @@ public:
         return e_.contiguous(o);
     }   
 
-    // class ExpressionPseudoIterator {
-    // public:
-    //     ExpressionPseudoIterator(
-    //         const UnaryViewExpression<DIM, E, T, UNARY_FUNCTOR>& expression
-    //     )
-    //     :   unaryFunctor_(expression.unaryFunctor_),
-    //         iterator_(expression.e_){
-    //     }
-    //     void incrementCoordinate(const size_t axis){   
-    //         iterator_. incrementCoordinate(axis);
-    //     }
-    //     void resetCoordinate(const size_t axis){   
-    //         iterator_. resetCoordinate(axis);
-    //     }
-    //     const value_type operator*() const{ 
-    //         return unaryFunctor_(*iterator_); 
-    //     }
-    // private:
-    //     const UnaryFunctor & unaryFunctor_;
-    //     typename E::ExpressionPseudoIterator iterator_;
-    // };
 
     template<class ITER>
     class IterImpl {
@@ -411,8 +415,10 @@ public:
         }
     }
 private:
+
     const ExpressionType  e_;
     UnaryFunctor unaryFunctor_;
+    bool matchingStrides_;
 };
 
 
@@ -476,21 +482,39 @@ public:
     :   base(),
         e1_(e1), // cast!
         e2_(e2), // cast!
-        binaryFunctor_(binaryFunctor)
+        binaryFunctor_(binaryFunctor),
+        matchingStrides_()
     {
 
+        if(e1_.empty()){
+            throw CannotUseEmptyArrayInExpressionException("first argument in binary expression is empty");
+        }
+        if(e2_.empty()){
+            throw CannotUseEmptyArrayInExpressionException("second argument in binary expression is empty");
+        }
+        if(e1_.hasShape() && e2_.hasShape()){
+            const auto s1 = e1_.makeShape();
+            const auto s2 = e2_.makeShape();
+            if(!canBroadcastShapes(s1, s2)){
+                throw ShapesNotBroadcastableException(s1, s2);
+            }
+        }
+        matchingStrides_ = this->matchingStridesImpl();
     }
 
     BinaryViewExpression(const BinaryViewExpression & other)
     :   base(),   
         e1_(other.e1_),
         e2_(other.e2_),
-        binaryFunctor_(other.binaryFunctor_){
+        binaryFunctor_(other.binaryFunctor_),
+        matchingStrides_(other.matchingStrides_)
+    {
+        
     }
 
 
-    bool hasShape() const{ 
-        return e1_.hasShape() || e1_.hasShape();
+    constexpr bool hasShape() const{ 
+        return (!ViewExpressionMetaType1::IsShapelessType::value) || (!ViewExpressionMetaType2::IsShapelessType::value);
     }
     bool hasStrides() const{ 
         if(e1_.hasStrides() || e2_.hasStrides()){
@@ -500,7 +524,9 @@ public:
             return false;
         }
     }
-
+    bool empty()const{
+        return false;
+    }
     const size_t shape(const size_t j) const{
         if(e1_.hasShape()){
             return e1_.shape(j);
@@ -550,27 +576,9 @@ public:
     }
 
     bool matchingStrides()const{
-
-        if(e1_.matchingStrides() && e2_.matchingStrides()){
-            if(!e1_.hasStrides() || !e2_.hasStrides()){
-                return true;
-            }
-            else{
-                for(std::size_t a=0; a<DIM; ++a){
-                    const auto s1 = e1_.strides(a);
-                    const auto s2 = e2_.strides(a);
-
-                    if(s1!=0 && s2!=0 && s1!=s2){
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-        else{
-            return false;
-        }
+        return matchingStrides_;
     }
+    
 
     // only valid if matchin strides
     bool contiguous() const{
@@ -657,11 +665,33 @@ public:
                      typename E2::ExpressionBroadcastPseudoIterator> 
     ExpressionBroadcastPseudoIterator;
 private:
+    bool matchingStridesImpl()const{
 
+        if(e1_.matchingStrides() && e2_.matchingStrides()){
+            if(!e1_.hasStrides() || !e2_.hasStrides()){
+                return true;
+            }
+            else{
+                for(std::size_t a=0; a<DIM; ++a){
+                    const auto s1 = e1_.strides(a);
+                    const auto s2 = e2_.strides(a);
+
+                    if(s1!=0 && s2!=0 && s1!=s2){
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
+    }
     const ExpressionType1  e1_;
     const ExpressionType2  e2_;
 
     BinaryFunctor binaryFunctor_;
+    bool matchingStrides_;
 };
 
 
