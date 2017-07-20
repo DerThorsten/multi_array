@@ -39,6 +39,12 @@ static void expression1_ma(benchmark::State& state) {
 BENCHMARK_TEMPLATE(expression1_ma, 2)->Range(8, 8<<10);
 
 
+
+
+
+
+
+
 template<std::size_t DIM>
 static void expression1_vigra(benchmark::State& state) {
 
@@ -63,6 +69,10 @@ static void expression1_vigra(benchmark::State& state) {
     // ...nothing to do
 }
 BENCHMARK(expression1_vigra)->Range(8, 8<<10);
+
+
+
+
 
 
 
