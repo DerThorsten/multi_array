@@ -125,7 +125,6 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
     }
 }
 
-
 TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
 
     namespace ma = multi_array;
@@ -230,9 +229,6 @@ TEST_CASE("[BinaryViewExpression] assign to array"){
     }
 }
 
-
-
-
 TEST_CASE("[ViewExpression] math view expressions"){
 
     namespace ma = multi_array;
@@ -336,9 +332,7 @@ TEST_CASE("[ViewExpression] math view expressions"){
         }
     }
     #endif
-
 }
-
 
 TEST_CASE("[ViewExpression] blackbox test"){
 
@@ -615,8 +609,84 @@ TEST_CASE("[ViewExpression] blackbox test"){
         //}
 
     }
-    
+}
+
+TEST_CASE("[ViewExpression] needs broadcasting"){
+    SUBCASE("Simple"){
+
+        namespace ma = multi_array;
+
+        auto a = ma::arange(20);
+        auto b = ma::arange(20);
+
+        auto aa = a(ma::All, ma::None);
+        REQUIRE_EQ(aa.dimension(),2);
+        REQUIRE_EQ(aa.shape(0),20);
+        REQUIRE_EQ(aa.shape(1),1);
+
+
+        auto bb = b(ma::None, ma::All);
+        REQUIRE_EQ(bb.size(),20);
+        REQUIRE_EQ(bb.dimension(),2);
+        REQUIRE_EQ(bb.shape(0),1);
+        REQUIRE_EQ(bb.shape(1),20);
+        
+
+        REQUIRE_FALSE(ma::exp(aa).needsBroadcasting());
+        REQUIRE_FALSE(ma::exp(bb).needsBroadcasting());
+
+
+        auto exp = ma::exp(aa) * ma::exp(bb);
+
+        REQUIRE(exp.needsBroadcasting());
+
+
+        REQUIRE_EQ(exp.broadcastedShape()[0], 20);
+        REQUIRE_EQ(exp.broadcastedShape()[1], 20);
+    }
+}
+
+
+TEST_CASE("[ViewExpression] broadcastedShape"){
+
+    SUBCASE("Simple"){
+
+        namespace ma = multi_array;
+
+        auto a = ma::arange(20);
+        auto b = ma::arange(20);
+
+        auto aa = a(ma::All, ma::None);
+        auto bb = b(ma::None, ma::All);
+
+        auto exp = a(ma::All, ma::None) * b(ma::None, ma::All);
+
+        REQUIRE(exp.needsBroadcasting());
+
+        REQUIRE_EQ(exp.broadcastedShape()[0], 20);
+        REQUIRE_EQ(exp.broadcastedShape()[1], 20);
+    }
+
+    SUBCASE("Advanced"){
+
+        namespace ma = multi_array;
+
+        auto a = ma::ones<int>(20,1,5,7);
+        auto b = ma::ones<int>(1, 3,5,1);
+        auto c = ma::ones<int>(20,1,1,7);
+
+       
+
+        auto exp = a + b + c;
+        REQUIRE(exp.needsBroadcasting());
+
+        REQUIRE_EQ(exp.broadcastedShape()[0], 20);
+        REQUIRE_EQ(exp.broadcastedShape()[1], 3);
+        REQUIRE_EQ(exp.broadcastedShape()[2], 5);
+        REQUIRE_EQ(exp.broadcastedShape()[3], 7);
+    }
 
 }
+
 
 TEST_SUITE_END();

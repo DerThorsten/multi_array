@@ -17,6 +17,7 @@ namespace ma = multi_array;
 
 
 
+
 class LargeArrayFixture
     :   public ::hayai::Fixture
 {

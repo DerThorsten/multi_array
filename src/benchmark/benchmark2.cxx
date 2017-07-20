@@ -23,10 +23,10 @@ class LargeArrayFixture
 public:
     virtual void SetUp()
     {
-       this->a = ma::ones<double>(300,200,100);
-       this->b = ma::ones<double>(300,200,100);
-       this->c = ma::ones<double>(300,200,100);
-       this->d = ma::ones<double>(300,200,100);
+       this->a = ma::ones<double>(30,200,100);
+       this->b = ma::ones<double>(30,200,100);
+       this->c = ma::ones<double>(30,200,100);
+       this->d = ma::ones<double>(30,200,100);
        this->pa = a.data(); 
        this->pb = b.data();
        this->pc = c.data();
@@ -50,10 +50,10 @@ class VigraArrayFixture
 public:
     virtual void SetUp()
     {
-        this->a = vigra::MultiArray<3,double>(vigra::Shape3(300,200,100));
-        this->b = vigra::MultiArray<3,double>(vigra::Shape3(300,200,100));
-        this->c = vigra::MultiArray<3,double>(vigra::Shape3(300,200,100));
-        this->d = vigra::MultiArray<3,double>(vigra::Shape3(300,200,100));
+        this->a = vigra::MultiArray<3,double>(vigra::Shape3(30,200,100));
+        this->b = vigra::MultiArray<3,double>(vigra::Shape3(30,200,100));
+        this->c = vigra::MultiArray<3,double>(vigra::Shape3(30,200,100));
+        this->d = vigra::MultiArray<3,double>(vigra::Shape3(30,200,100));
         a = 1.0;
         b = 1.0;
         c = 1.0;

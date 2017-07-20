@@ -4,6 +4,8 @@
 
 #include "multi_array/meta/promote_real.hxx"
 #include "multi_array/meta/promote_type.hxx"
+#include "multi_array/misc.hxx"
+
 
 
 
@@ -14,113 +16,113 @@ namespace multi_array{
     // unary in-place functors
     template<class T>
     struct Negative { 
-        void operator()(T& x) { x = -x; } 
+        very_inline void operator()(T& x) { x = -x; } 
     };
 
     template<class T>
     struct PrefixIncrement { 
-        void operator()(T& x) { ++x; } 
+        very_inline void operator()(T& x) { ++x; } 
     };
 
     template<class T>
     struct PostfixIncrement { 
-        void operator()(T& x) { x++; } 
+        very_inline void operator()(T& x) { x++; } 
     };
 
     template<class T>
     struct PrefixDecrement { 
-        void operator()(T& x) { --x; } 
+        very_inline void operator()(T& x) { --x; } 
     };
 
     template<class T>
     struct PostfixDecrement { 
-        void operator()(T& x) { x--; } 
+        very_inline void operator()(T& x) { x--; } 
     };
 
     // binary in-place functors
     template<class T1, class T2>
     struct Assign { 
-        void operator()(T1& x, const T2& y) { x = y; } 
+        very_inline void operator()(T1& x, const T2& y) { x = y; } 
     };
 
     template<class T1, class T2>
     struct PlusEqual { 
-        static void op(T1& x, const T2& y) { x += y; } 
-        void operator()(T1& x, const T2& y) { x += y; } 
+        very_inline static void op(T1& x, const T2& y) { x += y; } 
+        very_inline void operator()(T1& x, const T2& y) { x += y; } 
     };
 
     template<class T1, class T2>
     struct MinusEqual { 
-        static void op(T1& x, const T2& y) { x -= y; } 
-        void operator()(T1& x, const T2& y) { x -= y; } 
+        very_inline static void op(T1& x, const T2& y) { x -= y; } 
+        very_inline void operator()(T1& x, const T2& y) { x -= y; } 
     };
 
     template<class T1, class T2>
     struct TimesEqual { 
-        static void op(T1& x, const T2& y) { x *= y; } 
-        void operator()(T1& x, const T2& y) { x *= y; } 
+        very_inline static void op(T1& x, const T2& y) { x *= y; } 
+        very_inline void operator()(T1& x, const T2& y) { x *= y; } 
     };
 
     template<class T1, class T2>
     struct DividedByEqual { 
-        static void op(T1& x, const T2& y) { x /= y; } 
-        void operator()(T1& x, const T2& y) { x /= y; } 
+        very_inline static void op(T1& x, const T2& y) { x /= y; } 
+        very_inline void operator()(T1& x, const T2& y) { x /= y; } 
     };
 
     template<class T1, class T2>
     struct OrEqual { 
-        static void op(T1& x, const T2& y) { x |= y; } 
-        void operator()(T1& x, const T2& y) { x |= y; } 
+        very_inline static void op(T1& x, const T2& y) { x |= y; } 
+        very_inline void operator()(T1& x, const T2& y) { x |= y; } 
     };
 
 
     template<class T1, class T2>
     struct AndEqual { 
-        static void op(T1& x, const T2& y) { x &= y; } 
-        void operator()(T1& x, const T2& y) { x &= y; } 
+        very_inline static void op(T1& x, const T2& y) { x &= y; } 
+        very_inline void operator()(T1& x, const T2& y) { x &= y; } 
     };
 
     // binary functors
     template<class T1, class T2>
     struct Plus { 
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x + y; } 
-        type operator()(const T1& x, const T2& y) const { return x + y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x + y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x + y; } 
     };
 
     template<class T1, class T2>
     struct Minus { 
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x - y; } 
-        type operator()(const T1& x, const T2& y) const { return x - y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x - y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x - y; } 
     };
 
     template<class T1, class T2>
     struct Times { 
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x * y; } 
-        type operator()(const T1& x, const T2& y) const { return x * y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x * y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x * y; } 
     };
 
     template<class T1, class T2>
     struct DividedBy {
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x / y; } 
-        type operator()(const T1& x, const T2& y) const { return x / y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x / y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x / y; } 
     };
 
     template<class T1, class T2>
     struct Or { 
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x || y; } 
-        type operator()(const T1& x, const T2& y) const { return x || y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x || y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x || y; } 
     };
 
     template<class T1, class T2>
     struct And { 
         typedef typename meta::PromoteType<T1, T2>::type type;
-        static type op(const T1& x, const T2& y){ return x && y; } 
-        type operator()(const T1& x, const T2& y) const { return x && y; } 
+        very_inline static type op(const T1& x, const T2& y){ return x && y; } 
+        very_inline type operator()(const T1& x, const T2& y) const { return x && y; } 
     };
 
 
@@ -130,10 +132,10 @@ namespace multi_array{
         typedef typename multi_array::meta::PromoteRealType<T,EXPONENT_TYPE>::type type;
         typedef Pow<T,EXPONENT_TYPE> SelfType;
 
-        static type op(const T& x, const EXPONENT_TYPE& exponent){ 
+        very_inline static type op(const T& x, const EXPONENT_TYPE& exponent){ 
             return std::pow(x, exponent);
         } 
-        type operator()(const T& x, const EXPONENT_TYPE& exponent) const { 
+        very_inline type operator()(const T& x, const EXPONENT_TYPE& exponent) const { 
             return SelfType::op(x, exponent);
         } 
     };
@@ -143,10 +145,10 @@ namespace multi_array{
         typedef typename multi_array::meta::PromoteRealType<T,int64_t>::type type;
         typedef PowN<T,EXPONENT> SelfType;
 
-        static type op(const T& x){ 
+        very_inline static type op(const T& x){ 
             return std::pow(x, EXPONENT);
         } 
-        type operator()(const T& x) const { 
+        very_inline type operator()(const T& x) const { 
             return SelfType::op(x, EXPONENT);
         } 
     };
@@ -164,10 +166,10 @@ namespace multi_array{
         typedef T type;
 
         template<class U>
-        static type op(U && val){ return static_cast<U>(val); } 
+        very_inline static type op(U && val){ return static_cast<U>(val); } 
 
         template<class U>
-        type operator()(U && val) const { return static_cast<U>(val); } 
+        very_inline type operator()(U && val) const { return static_cast<U>(val); } 
     };
 
 
@@ -177,7 +179,7 @@ namespace multi_array{
     template<class T>\
     struct CLASS_NAME{\
         typedef typename meta::PromoteReal<T>::type type;\
-        type operator()(const T& value)const{\
+        very_inline type operator()(const T& value)const{\
             return FUNCTION_NAME(value);\
         }\
     };
@@ -235,12 +237,12 @@ namespace multi_array{
             binaryFunctor_(binaryFunctor){
         }
         template<class VALUE>
-        type operator()(VALUE && value)const{
+        very_inline type operator()(VALUE && value)const{
             return binaryFunctor_(scalarLike_, value);
         }
 
-        SCALAR_LIKE scalarLike_;
-        BINARY_FUNCTOR binaryFunctor_;
+        const SCALAR_LIKE scalarLike_;
+        const BINARY_FUNCTOR binaryFunctor_;
     };
 
     template<class SCALAR_LIKE, class BINARY_FUNCTOR>
@@ -254,12 +256,12 @@ namespace multi_array{
             binaryFunctor_(binaryFunctor){
         }
         template<class VALUE>
-        type operator()(VALUE && value)const{
+        very_inline type operator()(VALUE && value)const{
             return binaryFunctor_(value, scalarLike_);
         }
 
-        SCALAR_LIKE scalarLike_;
-        BINARY_FUNCTOR binaryFunctor_;
+        const SCALAR_LIKE scalarLike_;
+        const BINARY_FUNCTOR binaryFunctor_;
     };
 
 
@@ -290,7 +292,7 @@ namespace multi_array{
         }
         typedef typename OUTER_UNARY_FUNCTOR::type type;
         template<class ARG>
-        type operator()(
+        very_inline type operator()(
             ARG && arg
         )const{
 

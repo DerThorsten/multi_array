@@ -307,7 +307,7 @@ TEST_CASE("[SmartMultiArray] SmartMultiArray::operator"){
             using namespace multi_array;
 
             REQUIRE_EQ(array.smartHandle().useCount(),1);
-            auto subarray = array(Range(0,3), All());
+            auto subarray = array(Range(0,3), All);
 
             REQUIRE_EQ(subarray.dimension(), 2);
             REQUIRE_EQ(subarray.shape(0), 3);

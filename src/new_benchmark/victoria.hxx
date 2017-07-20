@@ -1,43 +1,101 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <iostream>
+
+#include "runner.hxx"
 
 namespace victoria{
 
 
-class BenchmarkBase{
+
+
+struct RunResult{
+};
+
+
+struct BenchmarkBase{
 public:
+
     virtual ~BenchmarkBase(){}
-    virtual run() = 0
 
-    
+    virtual RunResult run() = 0;
+    virtual std::string name() = 0;
 
 };
 
 
 
 
-struct TestInfo{
-    ~TestInfo(){}
+
+struct BenchmarkInfo{
+    BenchmarkBase * benchmark;
 };
 
-using TestInfoPtrVec = std::vector<TestInfo*>;
-extern TestInfoPtrVec *  gTestInfoPtrVec;
+
+
+using BenchmarkInfoVec = std::vector<BenchmarkInfo>;
+extern BenchmarkInfoVec *  benchmarkInfoVecPtr;
+
+
+
+
+
+inline BenchmarkInfo registerAndMakeBenchmarkInfo(
+    BenchmarkBase * benchmark
+){
+
+    if(benchmarkInfoVecPtr == nullptr){
+        benchmarkInfoVecPtr = new BenchmarkInfoVec();
+    }  
+
+
+    BenchmarkInfo benchmarkInfo;
+    benchmarkInfo.benchmark = benchmark;
+
+    benchmarkInfoVecPtr->push_back(benchmarkInfo);
+
+    return benchmarkInfo;
+}
+
+
+
+
+
+
+inline void runAll(){
+    if(benchmarkInfoVecPtr == nullptr){
+        std::cout<<"no benchmark\n";
+    }
+    else{
+        for(auto benchmarkInfoPtr : *benchmarkInfoVecPtr ){
+            auto benchmark = benchmarkInfoPtr.benchmark;
+            std::cout<<benchmark->name()<<"\n";
+
+            auto runneRes = runner(
+                10, // outer
+                10, // inner
+                [benchmark](){
+                    benchmark->run();
+                }
+            );
+
+
+        }
+    }
+
+}
+
 
 
 
 }
 
 
-#define VICTORIA_MAIN(a) \
-victoria::TestInfoPtrVec *  gTestInfoPtrVec = nullptr;
 
+#define VICTORIA_MAIN_VARS(BENCHMAR_NAME) \
+    namespace victoria{ \
+    BenchmarkInfoVec *  benchmarkInfoVecPtr = nullptr; \
+    } \
 
-
-
-
-class BENCHMARK_NAME{
-public:
-    virtual ~BENCHMARK_NAME(){}
-    virtual run() = 0
-};

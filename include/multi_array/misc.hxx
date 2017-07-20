@@ -1,15 +1,31 @@
 #pragma once
 
 
-#include <array>
 
+
+
+//#define very_inline inline  __attribute__((always_inline))
+#define __forceinline __attribute__((always_inline)) inline
+#define very_inline   __forceinline
+//#define very_inline   inline
+
+
+
+
+
+
+
+
+
+#include <array>
 #include "multi_array/meta/variadic.hxx"
 #include "multi_array/order.hxx"
 #include "multi_array/meta.hxx"
 
 namespace multi_array{
 
-
+    const static int64_t HasNoShapeValue = -1;
+    const static int64_t HasNoStridesValue = -1;
     enum AccWithCoordEnum{
         AccWithCoord
     };
@@ -79,14 +95,10 @@ namespace multi_array{
         
     };
 
-
-
-
     template<std::size_t DIM>
     class Shape : public TinyVector<int64_t, DIM>{
     public:
-        Shape(): TinyVector<int64_t, DIM>(){
-
+        Shape(const int64_t value = 0): TinyVector<int64_t, DIM>(value){
         }
         bool operator== (const Shape & other)const{
             for(std::size_t d=0; d<DIM; ++d){
@@ -143,7 +155,6 @@ namespace multi_array{
         }
     };
 
-
     class ShapesNotBroadcastableException: public std::runtime_error{
     public:
         template<std::size_t DIM>
@@ -157,8 +168,6 @@ namespace multi_array{
         :   std::runtime_error(msg.c_str()){
         }
     };
-
-
 
     template<std::size_t DIM>
     inline bool canBroadcastShapes(
@@ -176,7 +185,7 @@ namespace multi_array{
 
 
     template<std::size_t DIM>
-    Shape<DIM> broadcastShapes(
+    inline Shape<DIM> broadcastShapes(
         const Shape<DIM> & shapeA,
         const Shape<DIM> & shapeB
     ){
@@ -206,19 +215,19 @@ namespace multi_array{
         //void getShapeImpl( Shape<0> & result){
         //}  
         template<std::size_t CURRENT_INDEX, std::size_t DIM>
-        void getShapeImpl(
+        inline void getShapeImpl(
             Shape<DIM> & result
         ){
         } 
         template<std::size_t CURRENT_INDEX, std::size_t DIM, class ARG>
-        void getShapeImpl(
+        inline void getShapeImpl(
             Shape<DIM> & result,
             ARG && arg
         ){
             result[CURRENT_INDEX] = arg;
         } 
         template<std::size_t CURRENT_INDEX, std::size_t DIM, class ARG, class ... ARGS>
-        void getShapeImpl(
+        inline void getShapeImpl(
             Shape<DIM> & result,
             ARG && arg,
             ARGS && ... args
@@ -230,7 +239,7 @@ namespace multi_array{
     ///\endcond
 
     template<class  ... ARGS>
-    Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
+    inline Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
     shape(ARGS && ... args){
         typedef meta::VariadicArgumentsSize<ARGS ... > VSizeType;
         typedef Shape< VSizeType::value > ResultType;
@@ -240,7 +249,7 @@ namespace multi_array{
     }
 
     template<class  ... ARGS>
-    Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
+    inline Shape< meta::VariadicArgumentsSize<ARGS ... >::value >
     makeShape(ARGS && ... args){
         typedef meta::VariadicArgumentsSize<ARGS ... > VSizeType;
         typedef Shape< VSizeType::value > ResultType;
@@ -250,12 +259,10 @@ namespace multi_array{
     }
 
 
-
-
     template<std::size_t DIM>
     class Strides : public TinyVector<int64_t, DIM>{
     public:
-        Strides(): TinyVector<int64_t, DIM>(){
+        Strides(const int64_t value = 0): TinyVector<int64_t, DIM>(value){
 
         }
         bool operator== (const Strides & other)const{
@@ -286,15 +293,46 @@ namespace multi_array{
 
 
 
+
+
+
+
+      
+
+
+
+    struct NoneTag{
+    };
+    constexpr NoneTag none(){
+        return  NoneTag();
+    }
+    const static NoneTag None = NoneTag();
+
+    struct AllTag{
+    };
+    constexpr AllTag all(){
+        return  AllTag();
+    }
+    const static AllTag All = AllTag();
+    
+    struct EllipsisTag{
+    };
+    constexpr EllipsisTag ellipsis(){
+        return  EllipsisTag();
+    }
+    const static EllipsisTag Ellipsis = EllipsisTag();
+
+    
+
     template<std::size_t DIM>
     struct NewAxis
     : public meta::SizeT<DIM>{
-    };   
+    }; 
+    constexpr NewAxis<1> newAxis(){
+        return NewAxis<1>();
+    }
 
 
-
-
-    struct All{};
     struct Range{
         Range(const int64_t begin, const int64_t end)
         :   begin_(begin),
@@ -325,30 +363,16 @@ namespace multi_array{
         }
         int64_t begin_,end_, step_;
     };
-    struct Ellipsis{};
 
-
-
-
-
-    constexpr NewAxis<1> newAxis(){
-        return NewAxis<1>();
-    }
-
-
-
-    constexpr All all(){
-        return All();
-    }
     inline Range range(const int64_t begin, const int64_t end){
         return Range(begin, end);
     }
     inline StridedRange range(const int64_t begin, const int64_t end, const int64_t step){
         return StridedRange(begin, end, step);
     }
-    constexpr Ellipsis ellipsis(){
-        return Ellipsis();
-    }
+
+
+
 
 
 
@@ -386,7 +410,7 @@ namespace multi_array{
 
 
         template<class SHAPE>
-        uint64_t shapeSize(const SHAPE & shape){
+        inline uint64_t shapeSize(const SHAPE & shape){
             if(shape.empty()){
                 return 0;
             }
@@ -397,6 +421,38 @@ namespace multi_array{
                 }
                 return size;
             }
+        }
+
+
+        template<std::size_t DIM>
+        inline bool isContiguous(
+            const Shape<DIM>    & shape,
+            const Strides<DIM>  & strides
+        ){
+        
+            uint64_t lastValidMemOffset = static_cast<uint64_t>((shape[0]-1) * strides[0]);
+            uint64_t size = shape[0];
+
+            for(auto d=1; d<DIM; ++d){
+                const auto s = static_cast<uint64_t>(shape[d]);
+                lastValidMemOffset += (s-1) * static_cast<uint64_t>(strides[d]);
+                size *= s;
+            }
+            return (lastValidMemOffset + 1) == size +1;
+        }
+
+
+        template<std::size_t DIM>
+        inline bool isContiguous(
+            const Shape<DIM>    & shape,
+            const Strides<DIM>  & _strides,
+            const Order & order
+        ){
+            if(order == Order::ANY_ORDER){
+                return isContiguous(shape, _strides);
+            }
+            const auto orderStrides = strides(shape, order);
+            return _strides.relaxedEqual(orderStrides);
         }
 
 
@@ -413,7 +469,7 @@ namespace multi_array{
         }
 
         template<size_t DIM>
-        Strides<DIM> cOrderStrides(
+        inline Strides<DIM> cOrderStrides(
             const Shape<DIM>   & shape
             
         ){
@@ -436,7 +492,7 @@ namespace multi_array{
         }
 
         template<size_t DIM>
-        Strides<DIM> fOrderStrides(
+        inline Strides<DIM> fOrderStrides(
             const Shape<DIM>   & shape
             
         ){
@@ -446,7 +502,7 @@ namespace multi_array{
         }
 
         template<size_t DIM>
-        Strides<DIM> strides(
+        inline Strides<DIM> strides(
             const Shape<DIM>   & shape,
             const Order & order
         ){

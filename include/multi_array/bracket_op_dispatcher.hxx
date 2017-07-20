@@ -33,6 +33,12 @@ struct NewAxisCount<NewAxis<N>>
 };
 
 
+template<>
+struct NewAxisCount<NoneTag>
+: public meta::SizeT<1>{
+};
+
+
 template<class ARG,  class ... ARGS>
 struct CountTotalNeededNewAxisHelper
 {
@@ -63,6 +69,11 @@ struct IsNewAxisLike
 
 template<std::size_t N>
 struct IsNewAxisLike<NewAxis<N>>
+: public meta::SizeT<1>{
+};
+
+template<>
+struct IsNewAxisLike<NoneTag>
 : public meta::SizeT<1>{
 };
 
@@ -161,33 +172,48 @@ struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX, N_ARG_TO
 };
 // all
 template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, All, false>{
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, AllTag, false>{
     static void op(
         const MARRAY_IN & marrayIn,
         MARRAY_OUT & marrayOut,
-        const All & 
+        const AllTag & 
     ){
         marrayOut.shape_[OUT_AXIS_INDEX] = marrayIn.shape_[IN_AXIS_INDEX];
         marrayOut.strides_[OUT_AXIS_INDEX] = marrayIn.strides_[IN_AXIS_INDEX];
     }
 
 };
+
 // ellipsis
 template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
-struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, Ellipsis, false>{
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, EllipsisTag, false>{
     static void op(
         const MARRAY_IN & marrayIn,
         MARRAY_OUT & marrayOut,
-        const Ellipsis & 
+        const EllipsisTag & 
     ){
         for(auto i=0; i<N_ARG_TO_COVER_WITH_ELLIPSIS; ++i){
             marrayOut.shape_[OUT_AXIS_INDEX+i] = marrayIn.shape_[IN_AXIS_INDEX+i];
             marrayOut.strides_[OUT_AXIS_INDEX+i] = marrayIn.strides_[IN_AXIS_INDEX+i];
         }
     }
-
 };
 
+
+
+
+// NoneTag
+template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
+struct ProcessArg<MARRAY_IN, MARRAY_OUT, IN_AXIS_INDEX, OUT_AXIS_INDEX,N_ARG_TO_COVER_WITH_ELLIPSIS, NoneTag, false>{
+    static void op(
+        const MARRAY_IN & marrayIn,
+        MARRAY_OUT & marrayOut,
+        const NoneTag & 
+    ){
+        marrayOut.shape_[OUT_AXIS_INDEX] = 1;
+        marrayOut.strides_[OUT_AXIS_INDEX] = 0;
+    }
+};
 
 // newaxis
 template<class MARRAY_IN, class MARRAY_OUT, size_t IN_AXIS_INDEX, size_t OUT_AXIS_INDEX,int N_ARG_TO_COVER_WITH_ELLIPSIS>
@@ -233,6 +259,11 @@ struct InOutAxisIncrement<NewAxis<N>, false>{
     typedef meta::Int<0> InAxis;
     typedef meta::Int<N> OutAxis;
 };
+template<>
+struct InOutAxisIncrement<NoneTag, false>{
+    typedef meta::Int<0> InAxis;
+    typedef meta::Int<1> OutAxis;
+};
 
 
 template<
@@ -256,7 +287,7 @@ struct MixedArgsImpl{
         typedef multi_array::meta::IsIntegralOrIntegralRefeference<ARG> IsIntgralArgType;
 
         typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, NewAxis<1>> IsNewAxisArgType;
-        typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, Ellipsis> IsEllipsisArgType;
+        typedef multi_array::meta::IsSameWithoutConstAndReferece<ARG, EllipsisTag> IsEllipsisArgType;
         // handle the current argument
 
         typedef typename std::remove_reference<ARG>::type NoRefArgType;
@@ -380,7 +411,7 @@ struct BracketOpDispatcher{
     // information needed to dispatch...
     typedef CountTotalNeededNewAxis<ARGS ... >                     NumNeeededNewAxisType;
     typedef CountNewAxisLikeArgs<ARGS ... >                        NumNewArgLikeArgsType;
-    typedef meta::CountOccurrencesRelaxed<Ellipsis,    ARGS ... >  NumEllipsisArgsType;
+    typedef meta::CountOccurrencesRelaxed<EllipsisTag, ARGS ... >  NumEllipsisArgsType;
     typedef meta::CountIntegralArgumetns<ARGS ... >                NumIntegralArgsType;
     typedef meta::Bool<NumIntegralArgsType::value==RawArgSize>     AllIntegralArgsType;
 

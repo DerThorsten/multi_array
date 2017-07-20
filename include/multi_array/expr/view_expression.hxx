@@ -33,11 +33,61 @@ public:
     }
 };
 
+class CannotAssignShapelessExpressionToEmptyArrayException: public std::runtime_error{
+public:
+
+    CannotAssignShapelessExpressionToEmptyArrayException(const std::string & msg = std::string())
+    :   std::runtime_error(msg.c_str()){
+    }
+};
 
 
 
+namespace detail_expr{
 
 
+    struct ShapeInfo{
+        bool isShapeless{false};
+        bool needsBroadcasting{false};
+    };
+
+    template<std::size_t DIM>
+    inline ShapeInfo broadcastShapesWithShapeless(
+        const Shape<DIM> & shapeA,
+        const Shape<DIM> & shapeB,
+        Shape<DIM> & res
+    ){
+        auto shapeInfo = ShapeInfo();
+        for(auto d=0; d<DIM; ++d){
+            const auto sA = shapeA[d];
+            const auto sB = shapeB[d];
+
+            // shapeless result ?
+            if(sA==HasNoShapeValue && sB==HasNoShapeValue){
+                shapeInfo.isShapeless = true;
+                res[d] = HasNoShapeValue;
+            }
+            else if(sA==HasNoShapeValue || sB==HasNoShapeValue){
+                // HasNoShapeValue == -1
+                res[d] = std::max(sA, sB);
+            }
+            else if(sA != sB){
+                if(sA==1 || sB==1){
+                    shapeInfo.needsBroadcasting = true;
+                    res[d] = std::max(sA, sB);
+                }
+                else{
+                    throw ShapesNotBroadcastableException(shapeA, shapeB);
+                }
+            }
+            else{
+                res[d] =sA;
+            }
+        }
+        MULTI_ARRAY_CHECK(!shapeInfo.needsBroadcasting || !shapeInfo.isShapeless,"internal error");
+        return shapeInfo;
+    }
+}
 
 
 
@@ -98,7 +148,7 @@ public:
     typedef T value_type;
 
    
-
+    /*
     Shape<DIM> shape()const{
         Shape<DIM> ret;
         for(auto d=0; d<DIM; ++d){
@@ -106,6 +156,7 @@ public:
         }
         return ret;
     }
+    */
 
 
     bool hasShape() const{ 
@@ -115,26 +166,35 @@ public:
         return static_cast<const E&>(*this).hasStrides(); 
     }
 
-
-
-
-    int64_t shape(const size_t j) const{ 
-        return static_cast<const E&>(*this).shape(j); 
+    bool needsBroadcasting() const{
+        return static_cast<const E&>(*this).needsBroadcasting(); 
     }
+
+    
+    const Shape<DIM> & broadcastedShape()const{
+        return static_cast<const E&>(*this).broadcastedShape(); 
+    }
+
+    const Strides<DIM> & strides()const{
+        return static_cast<const E&>(*this).strides(); 
+    }
+
+
+    Strides<DIM> makeStrides()const{
+        MULTI_ARRAY_CHECK(this->hasStrides(),"internal error");
+        Strides<DIM> ret;
+        for(auto d=0; d<DIM; ++d){
+            ret[d] = this->strides(d);
+        }
+        return ret;
+    }
+
+    
 
     bool empty() const{ 
         return static_cast<const E&>(*this).empty(); 
     }
-
-    Shape<DIM> makeShape()const{
-        Shape<DIM> ret;
-        for(auto d=0; d<DIM; ++d){
-            ret[d] = this->shape(d);
-        }
-        return ret;
-    }
-   
-
+     
     int64_t strides(const std::size_t a)const{
         return static_cast<const E&>(*this).strides(a); 
     }
@@ -192,7 +252,11 @@ public:
     typedef ViewExpression<DIM, CoordExpr<DIM, AXIS, T>, T> base;
 
     CoordExpr()
-    :   base(){
+    :   base(),
+        // HasNoShapeShapeValue == -1
+        shape_(HasNoShapeValue),
+        strides_(HasNoStridesValue)
+    {
     }
 
 
@@ -207,10 +271,16 @@ public:
         return false;
     }
     
-    const size_t shape(const size_t j) const{
-        MULTI_ARRAY_CHECK(false,"has no shape");
-        return 0;
+    bool needsBroadcasting() const{
+        return false;
     }
+
+    const Shape<DIM> & broadcastedShape()const{
+        return shape_;
+    }
+    const Shape<DIM> & strides()const{
+        return strides_;
+    }   
     
     template<class VIEW>
     bool overlaps(const VIEW & v) const {
@@ -240,11 +310,11 @@ public:
     }   
 
 
-    value_type unsafeAccess(const uint64_t index)const{
+    very_inline value_type unsafeAccess(const uint64_t index)const{
         MULTI_ARRAY_CHECK(false,"cannot be called without coord");
         return value_type();
     }
-    value_type unsafeAccess(const uint64_t index, const Coordinate<DIM>  & coordinate)const{
+    very_inline value_type unsafeAccess(const uint64_t index, const Coordinate<DIM>  & coordinate)const{
          return coordinate[AXIS];
     }
 
@@ -270,6 +340,8 @@ public:
     typedef IterImpl ExpressionPseudoIterator;
     typedef IterImpl ExpressionBroadcastPseudoIterator;
 private:
+    const Shape<DIM>   shape_;
+    const Strides<DIM> strides_;
 };
 
 
@@ -320,6 +392,18 @@ public:
     bool hasStrides() const{ 
         return e_.hasStrides();
     }
+
+    bool needsBroadcasting() const{
+        return e_.needsBroadcasting();
+    }
+    
+    const Shape<DIM> & broadcastedShape()const{
+        return e_.broadcastedShape();
+    }
+    const Shape<DIM> & strides()const{
+        return e_.strides();
+    }
+
     // we explicitly check in the constructor that
     // e_ is non empty
     bool empty() const{ 
@@ -402,10 +486,10 @@ public:
 
 
 
-    value_type unsafeAccess(const uint64_t index)const{
+    very_inline value_type unsafeAccess(const uint64_t index)const{
         return unaryFunctor_(e_.unsafeAccess(index)); 
     }
-    value_type unsafeAccess(const uint64_t index, const Coordinate<DIM> & coordinate)const{
+    very_inline value_type unsafeAccess(const uint64_t index, const Coordinate<DIM> & coordinate)const{
         typedef typename  ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
         if(NeedsCoordinateType::value){
             return unaryFunctor_(e_.unsafeAccess(index,coordinate)); 
@@ -483,7 +567,9 @@ public:
         e1_(e1), // cast!
         e2_(e2), // cast!
         binaryFunctor_(binaryFunctor),
-        matchingStrides_()
+        matchingStrides_(),
+        shapeInfo_(),
+        broadcastedShape_()
     {
 
         if(e1_.empty()){
@@ -492,13 +578,14 @@ public:
         if(e2_.empty()){
             throw CannotUseEmptyArrayInExpressionException("second argument in binary expression is empty");
         }
-        if(e1_.hasShape() && e2_.hasShape()){
-            const auto s1 = e1_.makeShape();
-            const auto s2 = e2_.makeShape();
-            if(!canBroadcastShapes(s1, s2)){
-                throw ShapesNotBroadcastableException(s1, s2);
-            }
-        }
+
+
+        shapeInfo_ =  detail_expr::broadcastShapesWithShapeless(
+                                        e1_.broadcastedShape(),
+                                        e2_.broadcastedShape(), 
+                                        this->broadcastedShape_);
+
+
         matchingStrides_ = this->matchingStridesImpl();
     }
 
@@ -507,11 +594,17 @@ public:
         e1_(other.e1_),
         e2_(other.e2_),
         binaryFunctor_(other.binaryFunctor_),
-        matchingStrides_(other.matchingStrides_)
+        matchingStrides_(other.matchingStrides_),
+        shapeInfo_(other.shapeInfo_),
+        broadcastedShape_(other.broadcastedShape_)
     {
         
     }
 
+
+    bool needsBroadcasting() const{
+        return shapeInfo_.needsBroadcasting;
+    }
 
     constexpr bool hasShape() const{ 
         return (!ViewExpressionMetaType1::IsShapelessType::value) || (!ViewExpressionMetaType2::IsShapelessType::value);
@@ -527,16 +620,10 @@ public:
     bool empty()const{
         return false;
     }
-    const size_t shape(const size_t j) const{
-        if(e1_.hasShape()){
-            return e1_.shape(j);
-        }
-        else if(e2_.hasShape()){
-            return e2_.shape(j);
-        }
-        else{
-            MULTI_ARRAY_CHECK(false,"both do not have a shape")
-        }
+    
+
+    const Shape<DIM> & broadcastedShape()const{
+        return broadcastedShape_;
     }
     
     template<class VIEW>
@@ -590,14 +677,14 @@ public:
         return e1_.contiguous(o);
     }
 
-    value_type unsafeAccess(const uint64_t index)const{
+    very_inline value_type unsafeAccess(const uint64_t index)const{
         return binaryFunctor_(
             e1_.unsafeAccess(index),
             e2_.unsafeAccess(index)
         ); 
     }
 
-    value_type unsafeAccess(const uint64_t index, const Coordinate<DIM>  & coordinate)const{
+    very_inline value_type unsafeAccess(const uint64_t index, const Coordinate<DIM>  & coordinate)const{
 
         typedef typename  ViewExpressionMetaType::NeedsCoordinateType NeedsCoordinateType;
 
@@ -665,7 +752,7 @@ public:
                      typename E2::ExpressionBroadcastPseudoIterator> 
     ExpressionBroadcastPseudoIterator;
 private:
-    bool matchingStridesImpl()const{
+    very_inline bool matchingStridesImpl()const{
 
         if(e1_.matchingStrides() && e2_.matchingStrides()){
             if(!e1_.hasStrides() || !e2_.hasStrides()){
@@ -689,9 +776,10 @@ private:
     }
     const ExpressionType1  e1_;
     const ExpressionType2  e2_;
-
     BinaryFunctor binaryFunctor_;
     bool matchingStrides_;
+    detail_expr::ShapeInfo shapeInfo_;
+    Shape<DIM> broadcastedShape_;
 };
 
 
@@ -702,7 +790,7 @@ template<std::size_t DIM, class E1, class T1, class E2, class T2, class BINARY_F
 struct BinaryExprOpt
 {
     typedef BinaryViewExpression<DIM, E1, T1, E2, T2, BINARY_FUNCTOR> type;
-    inline static type op(
+    very_inline static type op(
         const ViewExpression<DIM, E1, T1> & expression1, 
         const ViewExpression<DIM, E2, T2> & expression2, 
         const BINARY_FUNCTOR & binaryFunctor = BINARY_FUNCTOR()
@@ -755,7 +843,7 @@ struct BinaryExprOpt<
     typedef BinaryExprOpt<DIM, E1, T1, E2, T2, CombinedFunctor> BinaryExprOptType;
     typedef typename BinaryExprOptType::type type;
 
-    inline static type op(
+    very_inline static type op(
         const UnaryViewExpression<DIM, E1, T1, UNARY_FUNCTOR_1> & e1,
         const UnaryViewExpression<DIM, E2, T2, UNARY_FUNCTOR_2> & e2,
         const BINARY_FUNCTOR & binaryFunctor = BINARY_FUNCTOR()
@@ -884,7 +972,7 @@ struct UnaryExprOpt<
     typedef typename BinaryExprOptType::type type;
 
     // static factory function
-    inline static type op(
+    very_inline static type op(
         const ExpressionType & expression, 
         UNARY_FUNCTOR && unaryFunctor = UNARY_FUNCTOR()
     ){
@@ -932,7 +1020,7 @@ struct UnaryExprOpt<
     typedef UnaryExprOpt<DIM, E, T, CombindedFunctor> UnaryExprOptType;
     typedef typename UnaryExprOptType::type type;
 
-    inline static type op(
+    very_inline static type op(
         const ExpressionType & expression, 
         UNARY_FUNCTOR && unaryFunctor = UNARY_FUNCTOR()
     ){

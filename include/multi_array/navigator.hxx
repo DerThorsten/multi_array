@@ -60,12 +60,24 @@ namespace multi_array{
         int64_t get(const std::size_t axis)const{
             return coordinate_[axis];
         }
+
+        
+        int64_t operator[](const std::size_t axis)const{
+            return coordinate_[axis]; 
+        }
+
+
+
         int64_t offset()const{
             return offset_;
         }
 
         const Coordinate<DIM> & coordinate()const{
             return coordinate_;
+        }
+
+        const Shape<DIM> & shape()const{
+            return shape_;
         }
     private:
         const Shape<DIM> & shape_;
@@ -139,6 +151,9 @@ namespace multi_array{
         int64_t get(const std::size_t axis)const{
             return coordinate_[axis];
         }
+        int64_t operator[](const std::size_t axis)const{
+            return coordinate_[axis]; 
+        }
 
         int64_t offsetA()const{
             return offsetA_;
@@ -149,6 +164,9 @@ namespace multi_array{
 
         const Coordinate<DIM> & coordinate()const{
             return coordinate_;
+        }
+        const Shape<DIM> & shape()const{
+            return shape_;
         }
     private:
 
