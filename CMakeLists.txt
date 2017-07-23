@@ -20,7 +20,7 @@ option(BUILD_TESTS    ON)
 
 
 SET(BUILD_BENCHMARK ON CACHE BOOL "")
-option(BUILD_BENCHMARK    ON)
+option(BUILD_BENCHMARK    OFF)
 
 
 
@@ -58,7 +58,7 @@ file(GLOB_RECURSE headers include/*.hxx)
 include_directories(include)
 
 
-message(STATUS "OSEfsr")
+
 #############################
 # external projects
 #############################
