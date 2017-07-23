@@ -80,16 +80,64 @@ namespace detail_op{
                 }      
             }
         }
+    }
 
+
+
+    template<class LHS, std::size_t DIM, class E, class U>
+    inline void assignNeedsBroadcastingFallback(
+        LHS & lhs, 
+        const ViewExpression<DIM, E, U> & expr
+    ){
+
+        const E & e = static_cast<const E &>(expr);
+        typename E::ExpressionBroadcastPseudoIterator eIter(e);
+        uint64_t thisOffset = 0;
+        Coordinate<DIM> coordinate(0);
+        auto data = lhs.data();
+
+        const auto & shape = lhs.shape();
+        const auto & strides = lhs.strides();
+        for(;;){
+
+            data[thisOffset] = *eIter;
+
+            for(int j=int(DIM)-1; j>=0; --j) {
+                if(coordinate[j]+1 == shape[j]) {
+                    if(j == 0) {
+                        return;
+                    }
+                    else {
+                        thisOffset -= coordinate[j] * strides[j];
+                        eIter.resetCoordinate(j);
+                        coordinate[j] = 0;
+                    }
+                }
+                else {
+                    thisOffset += strides[j];
+                    eIter.incrementCoordinate(j);
+                    ++coordinate[j];
+                    break;
+                }      
+            }
+        }
     }
 
 
     // NEEDS_COORDINATE = FALSE, 
-    // IS_SHAPELESS = FALSE
-    template<class LHS, class RHS, bool CAN_OVERLAP>
-    struct AssignHelperExpression<LHS, RHS, CAN_OVERLAP, ViewExpressionMeta<false, false> > 
+    // HAS_SHAPE = TRUE
+    template<class LHS, class RHS, bool CAN_OVERLAP, bool HAS_STRIDES, bool COMPATIBLE_WITH_ANY>
+    struct AssignHelperExpression<LHS, RHS, CAN_OVERLAP, ViewExpressionMeta<false, true, HAS_STRIDES, COMPATIBLE_WITH_ANY> > 
     {
+        const static std::size_t DIM = LHS::DimensionType::value;
         inline static void op(LHS & lhs, const RHS & rhs){
+
+            
+
+            //or(auto i=0; i<DIM; ++i){
+            //   std::cout<<"lhs "<<lhs.shape()[i]<<" rhs "<<rhs.broadcastedShape()[i]<<"\n";
+            //
+
 
             const auto eShape =rhs.broadcastedShape(); 
             const auto wasEmpty = lhs.empty();
@@ -101,82 +149,53 @@ namespace detail_op{
                 AssignHelper<LHS, LHS, false>::op(lhs, tmpRhs);
             }
             else{
-                if(rhs.matchingStrides()){
-                    const auto eStrides = rhs.makeStrides();
-                    if(eStrides.relaxedEqual(lhs.strides())){
 
-                        if(lhs.contiguous()){
+                if(!rhs.needsBroadcastingWithShape(lhs.shape())){
+
+                    if(rhs.matchingStrides()){
+                        
+                        if(rhs.matchingStrides(lhs.strides())){
+
+                            if(lhs.contiguous()){
 
 
-                            // this is the most important loop
-                            auto data = lhs.data();
-
-                            #if 1
-
-                            #define ROUND_DOWN(x, s) ((x) & ~((s)-1))
-                            const static uint64_t stepsize = 8;
-                            uint64_t i = 0;
-                            for(; i < ROUND_DOWN(lhs.size(), stepsize); i+=stepsize){
-
-                                data[i    ] = rhs.unsafeAccess(i    );
-                                data[i + 1] = rhs.unsafeAccess(i + 1);
-                                data[i + 2] = rhs.unsafeAccess(i + 2);
-                                data[i + 3] = rhs.unsafeAccess(i + 3);
-                                data[i + 4] = rhs.unsafeAccess(i + 4);
-                                data[i + 5] = rhs.unsafeAccess(i + 5);
-                                data[i + 6] = rhs.unsafeAccess(i + 6);
-                                data[i + 7] = rhs.unsafeAccess(i + 7);
-                                //data[i + 8] = rhs.unsafeAccess(i + 8);
-                                //data[i + 9] = rhs.unsafeAccess(i + 9);
-                                //data[i + 10] = rhs.unsafeAccess(i + 10);
-                                //data[i + 11] = rhs.unsafeAccess(i + 11);
-                                //data[i + 12] = rhs.unsafeAccess(i + 12);
-                                //data[i + 13] = rhs.unsafeAccess(i + 13);
-                                //data[i + 14] = rhs.unsafeAccess(i + 14);
-                                //data[i + 15] = rhs.unsafeAccess(i + 15);
+                                // this is the most important loop
+                                auto data = lhs.data();
+                                for(auto i=0;i<lhs.size(); ++i){
+                                    data[i] = rhs.unsafeAccess(i);
+                                }
                             }
-                            for(; i < lhs.size(); i++){
-                                data[i] = rhs.unsafeAccess(i );
+                            else{
+                                auto data = lhs.data();
+                                detail_for_each::forEachOffset(lhs,Order::ANY_ORDER,[&](const uint64_t offset){
+                                    data[offset] = rhs.unsafeAccess(offset); 
+                                });
                             }
-                            #undef ROUND_DOWN
-
-                            #else
-                            
-
-                            
-                            for(auto i=0;i<lhs.size(); ++i){
-                                data[i] = rhs.unsafeAccess(i);
-                            }
-                            #endif
-
-
-
                         }
                         else{
+                            const auto & eStrides = rhs.strides();
                             auto data = lhs.data();
-                            detail_for_each::forEachOffset(lhs,Order::ANY_ORDER,[&](const uint64_t offset){
-                                data[offset] = rhs.unsafeAccess(offset); 
-                            });
+                            detail_for_each::forEachOffset(lhs.shape(),lhs.strides(),eStrides,Order::ANY_ORDER,[&](const uint64_t offsetA, const uint64_t offsetB){
+                                data[offsetA] =  rhs.unsafeAccess(offsetB); 
+                            }); 
                         }
                     }
                     else{
-                        auto data = lhs.data();
-                        detail_for_each::forEachOffset(lhs.shape(),lhs.strides(),eStrides,Order::ANY_ORDER,[&](const uint64_t offsetA, const uint64_t offsetB){
-                            data[offsetA] =  rhs.unsafeAccess(offsetB); 
-                        }); 
+                        assignPseudoIterFallback(lhs, rhs);
                     }
                 }
                 else{
-                    assignPseudoIterFallback(lhs, rhs);
+                    std::cout<<"whauuuuut\n";
+                    assignNeedsBroadcastingFallback(lhs, rhs);
                 }
-            }
+            }            
         }
     };
 
     // NEEDS_COORDINATE = TRUE, 
-    // IS_SHAPELESS = FALSE
-    template<class LHS, class RHS, bool CAN_OVERLAP>
-    struct AssignHelperExpression<LHS, RHS,CAN_OVERLAP, ViewExpressionMeta<true, false> > 
+    // HAS_SHAPE = TRUE
+    template<class LHS, class RHS, bool CAN_OVERLAP, bool HAS_STRIDES, bool COMPATIBLE_WITH_ANY>
+    struct AssignHelperExpression<LHS, RHS,CAN_OVERLAP, ViewExpressionMeta<true, true, HAS_STRIDES, COMPATIBLE_WITH_ANY> > 
     {
         inline static void op(LHS & lhs, const RHS & rhs){
             const auto eShape =rhs.broadcastedShape(); 
@@ -217,9 +236,9 @@ namespace detail_op{
     };
 
     // NEEDS_COORDINATE = TRUE, 
-    // IS_SHAPELESS = TRUE
-    template<class LHS, class RHS, bool CAN_OVERLAP>
-    struct AssignHelperExpression<LHS, RHS,CAN_OVERLAP, ViewExpressionMeta<true, true> > 
+    // HAS_SHAPE = FALSE
+    template<class LHS, class RHS, bool CAN_OVERLAP, bool HAS_STRIDES, bool COMPATIBLE_WITH_ANY>
+    struct AssignHelperExpression<LHS, RHS,CAN_OVERLAP, ViewExpressionMeta<true, false, HAS_STRIDES, COMPATIBLE_WITH_ANY> > 
     {
         inline static void op(LHS & lhs, const RHS & rhs){
             const auto eShape =rhs.broadcastedShape(); 
@@ -248,10 +267,18 @@ namespace detail_op{
 
     // assignment helper for view expressions like
     template<class LHS, class RHS, bool CAN_OVERLAP>
-    struct AssignHelper : public
-        AssignHelperExpression<LHS, RHS,CAN_OVERLAP, typename RHS::ViewExpressionMetaType>
+    struct AssignHelper 
     {
-        
+        inline static void op(LHS & lhs, const RHS & rhs){
+            // the rhs is the expression:
+            // lets see if broadcastinn is needed
+            if(true || !rhs.needsBroadcastingWithShape(lhs.shape())){
+                AssignHelperExpression<LHS, RHS,CAN_OVERLAP, typename RHS::ViewExpressionMetaType>::op(lhs, rhs);
+            }
+            else{
+                assignNeedsBroadcastingFallback(lhs, rhs);
+            }
+        }
     };
 
 

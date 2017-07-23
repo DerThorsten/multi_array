@@ -306,5 +306,70 @@ namespace multi_array{
 
 
 
+    template<class OUTER_BINARY_FUNCTOR, class INNER_BINARY_FUNCTOR_0, class INNER_BINARY_FUNCTOR_1>
+    struct BinaryFunctorOfBinaryFunctorAndBinaryFunctor
+    {
+        BinaryFunctorOfBinaryFunctorAndBinaryFunctor(
+            const OUTER_BINARY_FUNCTOR  & binaryFunctor = OUTER_BINARY_FUNCTOR(),
+            const INNER_BINARY_FUNCTOR_0 & binaryFunctor1 = INNER_BINARY_FUNCTOR_0(),
+            const INNER_BINARY_FUNCTOR_1 & binaryFunctor2 = INNER_BINARY_FUNCTOR_1()
+        )
+        :   binaryFunctor_(binaryFunctor),
+            binaryFunctor1_(binaryFunctor1),
+            binaryFunctor2_(binaryFunctor2){
+        }
+        typedef typename OUTER_BINARY_FUNCTOR::type type;
+        template<class A, class B, class C, class D>
+        very_inline type operator()(const A & a, const B & b, const C & c , const D & d)const{
+            return binaryFunctor_(binaryFunctor1_(a,b), binaryFunctor2_(c,d));
+        }
+        const OUTER_BINARY_FUNCTOR  binaryFunctor_;
+        const INNER_BINARY_FUNCTOR_0 binaryFunctor1_;
+        const INNER_BINARY_FUNCTOR_1 binaryFunctor2_;
+    };
+
+
+    // just an experiment
+    // (a+b) + (c+d)   
+
+    #if 1
+    template<class T0_A, class T0_B, class T1_A, class T1_B>
+    struct BinaryFunctorOfBinaryFunctorAndBinaryFunctor<
+        Plus<typename Plus<T0_A, T0_B>::type, typename Plus<T1_A, T1_B>::type >,
+        Plus<T0_A,T0_B>,
+        Plus<T1_A, T1_B>
+    >{
+        typedef typename meta::PromoteType<T0_A, T0_B>::type T0AB;
+        typedef typename meta::PromoteType<T1_A, T1_B>::type T1AB;
+        typedef typename meta::PromoteType<T0AB, T1AB>::type type;
+
+        BinaryFunctorOfBinaryFunctorAndBinaryFunctor(
+            const Plus<typename Plus<T0_A, T0_B>::type, typename Plus<T1_A, T1_B>::type > &,
+            const Plus<T0_A,T0_B> & ,
+            const Plus<T1_A,T1_B> & 
+        )
+        {
+
+        }
+        template<class A, class B, class C, class D>
+        very_inline type operator()(const A & a, const B & b, const C & c , const D & d)const{
+            return a+b+c+d;
+        }
+
+    };
+
+
+
+
+    #endif
+
+
+
+
+
+
+
+
+
     }
 }

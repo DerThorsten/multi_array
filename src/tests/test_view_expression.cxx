@@ -27,30 +27,30 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::matchingStrides"){
         SUBCASE("matching strides simple"){
             auto ab = a + b ;   
             REQUIRE_EQ(ab.matchingStrides(),true);
-            REQUIRE_EQ(ab.strides(0) , a.strides(0));
-            REQUIRE_EQ(ab.strides(1) , a.strides(1));
+            REQUIRE_EQ(ab.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(ab.strides()[1] , a.strides()[1]);
         }
         SUBCASE("matching strides advanced A"){
             auto ab  = a + b;
             auto aba  = ab + a;
             
-            REQUIRE_EQ(ab.strides(0) , a.strides(0));
-            REQUIRE_EQ(ab.strides(1) , a.strides(1));
+            REQUIRE_EQ(ab.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(ab.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(ab.matchingStrides(),true);
 
-            REQUIRE_EQ(aba.strides(0) , a.strides(0));
-            REQUIRE_EQ(aba.strides(1) , a.strides(1));
+            REQUIRE_EQ(aba.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(aba.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(aba.matchingStrides(),true);
             
         }
         SUBCASE("matching strides advanced B"){
             auto ab  = a + b;
             auto aba = a + ab;
-            REQUIRE_EQ(ab.strides(0) , a.strides(0));
-            REQUIRE_EQ(ab.strides(1) , a.strides(1));
+            REQUIRE_EQ(ab.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(ab.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(ab.matchingStrides(),true);
-            REQUIRE_EQ(aba.strides(0) , a.strides(0));
-            REQUIRE_EQ(aba.strides(1) , a.strides(1));
+            REQUIRE_EQ(aba.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(aba.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(aba.matchingStrides(),true);    
         }
         SUBCASE("matching strides advanced C"){
@@ -58,16 +58,16 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::matchingStrides"){
             auto aba  = ((a + b)) + e;
 
             //REQUIRE_EQ(a.smartHandle().useCount(),1);
-            REQUIRE_EQ(aba.strides(0) , 3);
-            REQUIRE_EQ(aba.strides(1) , 1);
+            REQUIRE_EQ(aba.strides()[0] , 3);
+            REQUIRE_EQ(aba.strides()[1] , 1);
             REQUIRE_EQ(aba.matchingStrides(),true);
 
         }
         SUBCASE("matching strides advanced D"){
             //auto ab  = (a + b);
             auto thesum  = e + ((a + b + (a+b+(a+b)))) + e;
-            REQUIRE_EQ(thesum.strides(0) , 3);
-            REQUIRE_EQ(thesum.strides(1) , 1);
+            REQUIRE_EQ(thesum.strides()[0] , 3);
+            REQUIRE_EQ(thesum.strides()[1] , 1);
             REQUIRE_EQ(thesum.matchingStrides(),true);
 
         }
@@ -98,8 +98,8 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
             auto ab = a + b ;   
             REQUIRE_EQ(ab.matchingStrides(),true);
             REQUIRE_EQ(ab.contiguous(),true);
-            REQUIRE_EQ(ab.strides(0) , a.strides(0));
-            REQUIRE_EQ(ab.strides(1) , a.strides(1));
+            REQUIRE_EQ(ab.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(ab.strides()[1] , a.strides()[1]);
 
             REQUIRE_EQ(ab.unsafeAccess(0),2);
             REQUIRE_EQ(ab.unsafeAccess(1),2);
@@ -112,8 +112,8 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
             auto theSum = a + b + c + (a+b);   
             REQUIRE_EQ(theSum.matchingStrides(),true);
             REQUIRE_EQ(theSum.contiguous(),true);
-            REQUIRE_EQ(theSum.strides(0) , a.strides(0));
-            REQUIRE_EQ(theSum.strides(1) , a.strides(1));
+            REQUIRE_EQ(theSum.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(theSum.strides()[1], a.strides()[1]);
 
             REQUIRE_EQ(theSum.unsafeAccess(0),5);
             REQUIRE_EQ(theSum.unsafeAccess(1),5);
@@ -139,8 +139,8 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
             auto ab = a + b ;   
             REQUIRE_EQ(ab.matchingStrides(),true);
             REQUIRE_EQ(ab.contiguous(),true);
-            REQUIRE_EQ(ab.strides(0) , a.strides(0));
-            REQUIRE_EQ(ab.strides(1) , a.strides(1));
+            REQUIRE_EQ(ab.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(ab.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(ab.unsafeAccess(0),2);
             REQUIRE_EQ(ab.unsafeAccess(1),2);
             REQUIRE_EQ(ab.unsafeAccess(2),2);
@@ -152,8 +152,8 @@ TEST_CASE("[BinaryViewExpression] BinaryViewExpression::unsafeAccess"){
             auto theSum = a + b + c + (a+b);   
             REQUIRE_EQ(theSum.matchingStrides(),true);
             REQUIRE_EQ(theSum.contiguous(),true);
-            REQUIRE_EQ(theSum.strides(0) , a.strides(0));
-            REQUIRE_EQ(theSum.strides(1) , a.strides(1));
+            REQUIRE_EQ(theSum.strides()[0] , a.strides()[0]);
+            REQUIRE_EQ(theSum.strides()[1] , a.strides()[1]);
             REQUIRE_EQ(theSum.unsafeAccess(0),5);
             REQUIRE_EQ(theSum.unsafeAccess(1),5);
             REQUIRE_EQ(theSum.unsafeAccess(2),5);
@@ -684,6 +684,45 @@ TEST_CASE("[ViewExpression] broadcastedShape"){
         REQUIRE_EQ(exp.broadcastedShape()[1], 3);
         REQUIRE_EQ(exp.broadcastedShape()[2], 5);
         REQUIRE_EQ(exp.broadcastedShape()[3], 7);
+    }
+}
+
+
+
+TEST_CASE("[ViewExpression] broadcast"){
+
+    SUBCASE("Simple"){
+
+        namespace ma = multi_array;
+
+        auto a = ma::arange(3);
+        auto b = ma::arange(4);
+        auto res = ma::ones<int>(3, 4);
+        auto trueRes = ma::ones<int>(3, 4);
+
+
+
+        for(auto x0=0; x0<3; ++x0)
+        for(auto x1=0; x1<4; ++x1){
+            trueRes(x0, x1) = a(x0) * b(x1);
+        }
+        
+        res = a(ma::All, ma::None) * b(ma::None, ma::All);
+
+        REQUIRE_EQ(res(0,0),trueRes(0,0));
+        REQUIRE_EQ(res(0,1),trueRes(0,1));
+        REQUIRE_EQ(res(0,2),trueRes(0,2));
+        REQUIRE_EQ(res(0,3),trueRes(0,3));
+
+        REQUIRE_EQ(res(1,0),trueRes(1,0));
+        REQUIRE_EQ(res(1,1),trueRes(1,1));
+        REQUIRE_EQ(res(1,2),trueRes(1,2));
+        REQUIRE_EQ(res(1,3),trueRes(1,3));
+
+        REQUIRE_EQ(res(2,0),trueRes(2,0));
+        REQUIRE_EQ(res(2,1),trueRes(2,1));
+        REQUIRE_EQ(res(2,2),trueRes(2,2));
+        REQUIRE_EQ(res(2,3),trueRes(2,3));
     }
 
 }

@@ -27,44 +27,18 @@ endif(BUILD_TESTS)
 
 if(BUILD_BENCHMARK)
 
-    #############################
-    # nonius (benchmarks)
-    #############################
-    include(ExternalProject)
-    find_package(Git REQUIRED)
-
-    ExternalProject_Add(
-        nonius
-        PREFIX ${CMAKE_BINARY_DIR}/external_projects/nonius
-        GIT_REPOSITORY https://github.com/rmartinho/nonius
-        GIT_TAG v1.2.0-beta.1
-        TIMEOUT 10
-        #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        LOG_DOWNLOAD ON
-    )
-
-    # Expose required variable (DOCTEST_INCLUDE_DIR) to parent scope
-    ExternalProject_Get_Property(nonius source_dir)
-    set(NONIUS_INCLUDE_DIR ${source_dir}/include/ CACHE INTERNAL "Path to include folder for nonius")
-    message(STATUS "NONIUS_INCLUDE_DIR" ${NONIUS_INCLUDE_DIR} )
 
 
 
     #############################
     # hayai (benchmarks)
     #############################
-    include(ExternalProject)
-    find_package(Git REQUIRED)
-
     ExternalProject_Add(
-        hayai
-        PREFIX ${CMAKE_BINARY_DIR}/external_projects/hayai
-        GIT_REPOSITORY https://github.com/nickbruun/hayai
-        GIT_TAG v1.0.1
-        TIMEOUT 10
+        json
+        PREFIX ${CMAKE_BINARY_DIR}/external_projects/json
+        GIT_REPOSITORY https://github.com/nlohmann/json
+        GIT_TAG v2.1.1
+        TIMEOUT 5
         #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
@@ -72,23 +46,20 @@ if(BUILD_BENCHMARK)
         LOG_DOWNLOAD ON
     )
     # Expose required variable (DOCTEST_INCLUDE_DIR) to parent scope
-    ExternalProject_Get_Property(hayai source_dir)
-    set(HAYAI_INCLUDE_DIR ${source_dir}/src/ CACHE INTERNAL "Path to include folder for hayai")
-    message(STATUS "HAYAI_INCLUDE_DIR" ${HAYAI_INCLUDE_DIR} )
+    ExternalProject_Get_Property(json source_dir)
+    set(JSON_INCLUDE_DIR ${source_dir}/src/ CACHE INTERNAL "Path to include folder for json")
+    message(STATUS "JSON_INCLUDE_DIR" ${JSON_INCLUDE_DIR} )
 
 
     #############################
     # vigra (to compare)
     #############################
-    include(ExternalProject)
-    find_package(Git REQUIRED)
-
     ExternalProject_Add(
         vigra
         PREFIX ${CMAKE_BINARY_DIR}/external_projects/vigra
         GIT_REPOSITORY https://github.com/ukoethe/vigra
         GIT_TAG Version-1-11-1
-        TIMEOUT 10
+        TIMEOUT 5
         #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
@@ -100,7 +71,47 @@ if(BUILD_BENCHMARK)
     set(VIGRA_INCLUDE_DIR ${source_dir}/include/ CACHE INTERNAL "Path to include folder for vigra")
     message(STATUS "VIGRA_INCLUDE_DIR" ${VIGRA_INCLUDE_DIR} )
 
+    #############################
+    # vigra (to compare)
+    #############################
+    ExternalProject_Add(
+        xtensor
+        PREFIX ${CMAKE_BINARY_DIR}/external_projects/xtensor
+        GIT_REPOSITORY https://github.com/QuantStack/xtensor
+        GIT_TAG 0.10.7
+        TIMEOUT 5
+        #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        LOG_DOWNLOAD ON
+    )
+    # Expose required variable (DOCTEST_INCLUDE_DIR) to parent scope
+    ExternalProject_Get_Property(xtensor source_dir)
+    set(XTENSOR_INCLUDE_DIR ${source_dir}/include/ CACHE INTERNAL "Path to include folder for xtensor")
+    message(STATUS "XTENSOR_INCLUDE_DIR" ${XTENSOR_INCLUDE_DIR} )
 
 
+
+
+
+    # #################################
+    # # blitz++ https://github.com/syntheticpp/blitz
+    # #################################
+    # ExternalProject_Add(
+    #     blitz
+    #     PREFIX ${CMAKE_BINARY_DIR}/external_projects/blitz
+    #     URL https://downloads.sourceforge.net/project/blitz/blitz/Blitz%2B%2B%200.10/blitz-0.10.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fblitz%2Ffiles%2Fblitz%2FBlitz%252B%252B%25200.10%2F&ts=1500718778&use_mirror=kent
+    #     TIMEOUT 5
+    #     #UPDATE_COMMAND ${GIT_EXECUTABLE} pull
+    #     CONFIGURE_COMMAND "./autoreconf -f -i -v"
+    #     BUILD_COMMAND "make lib"
+    #     INSTALL_COMMAND "make install"
+    #     LOG_DOWNLOAD ON
+    # )
+    # # Expose required variable (DOCTEST_INCLUDE_DIR) to parent scope
+    # ExternalProject_Get_Property(blitz source_dir)
+    # set(BLITZ_INCLUDE_DIR ${source_dir} CACHE INTERNAL "Path to include folder for blitz")
+    # message(STATUS "BLITZ_INCLUDE_DIR" ${BLITZ_INCLUDE_DIR} )
 
 endif(BUILD_BENCHMARK)

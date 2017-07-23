@@ -29,7 +29,9 @@ int main(){
 
     auto a = ma::arange(20);
     auto b = ma::arange(20);
+    auto c = ma::ones<int>(20,20);
 
     auto exp = a(ma::all(), ma::newAxis()) *  b(ma::newAxis(), ma::All);
 
+    c = exp;
 }

@@ -180,4 +180,105 @@ namespace multi_array{
     };  
     
 
+    template<std::size_t DIM>
+    class DoubleNavigatorBroadcastRhs{
+    public:
+        DoubleNavigatorBroadcastRhs(
+            const Shape<DIM> & shape, 
+            const Shape<DIM> & shapeB, 
+            const Strides<DIM> & stridesA,
+            const Strides<DIM> & stridesB
+        )
+        :   shape_(shape),
+            shapeB_(shapeB),
+            stridesA_(stridesA),
+            stridesB_(stridesB),
+            coordinate_(),
+            offsetA_(0),
+            offsetB_(0)
+        {
+
+            for(auto a=0; a<DIM; ++a){
+                coordinate_[a] = 0;
+            }
+
+        }
+
+        template<std::size_t AXIS>
+        void increment(){
+            ++coordinate_[AXIS];
+            offsetA_ += stridesA_[AXIS];
+            if(shapeB_[AXIS]!= 1)
+                offsetB_ += stridesB_[AXIS];
+        }
+
+        void increment(const std::size_t axis){
+            ++coordinate_[axis];
+            offsetA_ += stridesA_[axis];
+            if(shapeB_[axis]!= 1)
+                offsetB_ += stridesB_[axis];
+        }
+
+        template<std::size_t AXIS>
+        void set(const int64_t value){
+            
+            offsetA_ -= coordinate_[AXIS]*stridesA_[AXIS];
+            coordinate_[AXIS] = value;
+            offsetA_ += value * stridesA_[AXIS];
+
+            if(shapeB_[AXIS]!= 1){
+                offsetB_ += value * stridesB_[AXIS];
+                offsetB_ -= coordinate_[AXIS]*stridesB_[AXIS];
+            }
+        }
+
+       
+        void set(const std::size_t axis, const int64_t value){
+            
+            offsetA_ -= coordinate_[axis]*stridesA_[axis];
+            coordinate_[axis] = value;
+            offsetA_ += value * stridesA_[axis];
+
+            if(shapeB_[axis]!= 1){
+                offsetB_ -= coordinate_[axis]*stridesB_[axis];
+                offsetB_ += value * stridesB_[axis];
+            }
+        }
+
+        template<std::size_t AXIS>
+        int64_t get()const{
+            return coordinate_[AXIS];
+        }
+        int64_t get(const std::size_t axis)const{
+            return coordinate_[axis];
+        }
+        int64_t operator[](const std::size_t axis)const{
+            return coordinate_[axis]; 
+        }
+
+        int64_t offsetA()const{
+            return offsetA_;
+        }
+        int64_t offsetB()const{
+            return offsetB_;
+        }
+
+        const Coordinate<DIM> & coordinate()const{
+            return coordinate_;
+        }
+        const Shape<DIM> & shape()const{
+            return shape_;
+        }
+    private:
+
+        const Shape<DIM> & shape_;
+        const Shape<DIM> & shapeB_;
+        const Strides<DIM> & stridesA_;
+        const Strides<DIM> & stridesB_;
+        Coordinate<DIM>  coordinate_;
+
+        int64_t offsetA_;
+        int64_t offsetB_;
+    };  
+
 }

@@ -162,7 +162,7 @@ namespace multi_array{
             const Shape<DIM> & shapeA,
             const Shape<DIM> & shapeB
         )
-        :   std::runtime_error(std::string("TODO")){
+        :   std::runtime_error(std::string("cannot broadcast shapes...")){
         }
         ShapesNotBroadcastableException(const std::string & msg = std::string())
         :   std::runtime_error(msg.c_str()){
@@ -197,7 +197,7 @@ namespace multi_array{
 
 
             // check for compatibility
-            if(sA!=1 && sB[d]!=1 && sA!=sB){
+            if(sA!=1 && sB!=1 && sA!=sB){
                 throw ShapesNotBroadcastableException(shapeA, shapeB);
             }
             // since we checked for compatibility we can 

@@ -83,7 +83,7 @@ class SmartMultiArray
     public ViewExpression<DIM, SmartMultiArray<T, DIM, IS_CONST>, T>
 {
 
-    typedef ViewExpressionMeta<false, false> ViewExpressionMetaType;
+    typedef ViewExpressionMeta<false, true, true, false> ViewExpressionMetaType;
 
     // cool Cats have many friends =)
     template<std::size_t _DIM, class _E, class _T>
@@ -211,15 +211,17 @@ public:
         }
 
         void incrementCoordinate(const std::size_t axis){ 
-            if(coord_[axis] + 1 < array_.shape(axis)){
+            if(array_.shape(axis)!=1){
                 ++coord_[axis];
                 offset_ += array_.strides(axis); 
             }
         }
 
         void resetCoordinate(const std::size_t axis){ 
-            offset_ -= array_.strides(axis)*
-                 (array_.shape(axis) - 1); 
+            if(array_.shape(axis)!=1){
+                offset_ -= array_.strides(axis)*
+                     (array_.shape(axis) - 1); 
+            }
         }
         const_reference operator*() const { 
             return data_[offset_]; 
