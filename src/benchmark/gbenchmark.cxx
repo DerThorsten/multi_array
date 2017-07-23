@@ -47,8 +47,8 @@ ARRAY_BENCH(expr, ma){
     state.SetBytesProcessed(int64_t(state.iterations())*std::pow(s,DIM));
 };
 
-//REG_ARRAY_BENCH(expr, ma, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
-REG_ARRAY_BENCH(expr, ma, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
+REG_ARRAY_BENCH(expr, ma, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
+//REG_ARRAY_BENCH(expr, ma, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
 
 // REG_ARRAY_BENCH(expr, ma, 3, int)->RangeMultiplier(2)->Range(2,2<<3);
 // REG_ARRAY_BENCH(expr, ma, 4, int)->RangeMultiplier(2)->Range(2,2<<3);
@@ -83,8 +83,8 @@ ARRAY_BENCH(expr, vigra){
     state.SetBytesProcessed(int64_t(state.iterations())*std::pow(s,DIM));
 };
 
-//REG_ARRAY_BENCH(expr, vigra, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
-REG_ARRAY_BENCH(expr, vigra, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
+REG_ARRAY_BENCH(expr, vigra, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
+//REG_ARRAY_BENCH(expr, vigra, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
 // REG_ARRAY_BENCH(expr, vigra, 3, int)->RangeMultiplier(2)->Range(2,2<<3);
 // REG_ARRAY_BENCH(expr, vigra, 4, int)->RangeMultiplier(2)->Range(2,2<<3);
 
@@ -114,8 +114,8 @@ ARRAY_BENCH(expr, blitz){
     state.SetBytesProcessed(int64_t(state.iterations())*std::pow(s,DIM));
 };
 
-//REG_ARRAY_BENCH(expr, blitz, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
-REG_ARRAY_BENCH(expr, blitz, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
+REG_ARRAY_BENCH(expr, blitz, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
+//REG_ARRAY_BENCH(expr, blitz, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
 // REG_ARRAY_BENCH(expr, blitz, 3, int)->RangeMultiplier(2)->Range(2,2<<3);
 // REG_ARRAY_BENCH(expr, blitz, 4, int)->RangeMultiplier(2)->Range(2,2<<3);
 
@@ -128,11 +128,11 @@ ARRAY_BENCH(expr, xt){
 
     // setup
     const auto s = int64_t(state.range(0));
-    xt::xtensor<T, DIM> a = xt::ones<T>({s,s});
-    xt::xtensor<T, DIM> b = xt::ones<T>({s,s});
-    xt::xtensor<T, DIM> c = xt::ones<T>({s,s});
-    xt::xtensor<T, DIM> d = xt::ones<T>({s,s});
-    xt::xtensor<T, DIM> e = xt::ones<T>({s,s});
+    xt::xtensor<T, DIM> a = xt::ones<T>({s});
+    xt::xtensor<T, DIM> b = xt::ones<T>({s});
+    xt::xtensor<T, DIM> c = xt::ones<T>({s});
+    xt::xtensor<T, DIM> d = xt::ones<T>({s});
+    xt::xtensor<T, DIM> e = xt::ones<T>({s});
 
     // a = T(1);
     // b = T(1);
@@ -149,8 +149,8 @@ ARRAY_BENCH(expr, xt){
     state.SetBytesProcessed(int64_t(state.iterations())*std::pow(s,DIM));
 };
 
-//REG_ARRAY_BENCH(expr, xt, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
-REG_ARRAY_BENCH(expr, xt, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
+REG_ARRAY_BENCH(expr, xt, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
+//REG_ARRAY_BENCH(expr, xt, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
 // REG_ARRAY_BENCH(expr, blitz, 3, int)->RangeMultiplier(2)->Range(2,2<<3);
 // REG_ARRAY_BENCH(expr, blitz, 4, int)->RangeMultiplier(2)->Range(2,2<<3);
 
@@ -188,8 +188,8 @@ ARRAY_BENCH(expr, opt){
 
 };
 
-//REG_ARRAY_BENCH(expr, opt, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
-REG_ARRAY_BENCH(expr, opt, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
+REG_ARRAY_BENCH(expr, opt, 1, int)->RangeMultiplier(2)->Range(2<<19,2<<20);
+//REG_ARRAY_BENCH(expr, opt, 2, int)->RangeMultiplier(2)->Range(2<<10,2<<10);
 
 
 
