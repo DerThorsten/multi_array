@@ -40,7 +40,7 @@ matrix:
         - gcc -v && g++ -v && cmake --version
     
         - cmake 
-          -DBUILD_TESTS=ON 
+          -DBUILD_TESTS=ON -DBUILD_BENCHMARK=OFF
         - make -j2
         - CTEST_OUTPUT_ON_FAILURE=TRUE make test
 
@@ -64,7 +64,7 @@ matrix:
             - cmake
       script:
         - cmake 
-          -DBUILD_TESTS=ON 
+          -DBUILD_TESTS=ON -DBUILD_BENCHMARK=OFF
         - make -j2
 
 
@@ -73,7 +73,7 @@ matrix:
       compiler: clang
       script:
         - cmake 
-            -DBUILD_TESTS=ON 
+            -DBUILD_TESTS=ON -DBUILD_BENCHMARK=OFF
         - make -j 2
         - CTEST_OUTPUT_ON_FAILURE=TRUE make test
 
@@ -121,7 +121,7 @@ matrix:
         ###############################################
         # configure cmake
         ###############################################
-        - $ENV_BIN/cmake -DBUILD_TESTS=ON 
+        - $ENV_BIN/cmake -DBUILD_TESTS=ON -DBUILD_BENCHMARK=OFF
 
         ###############################################
         # the actual build
